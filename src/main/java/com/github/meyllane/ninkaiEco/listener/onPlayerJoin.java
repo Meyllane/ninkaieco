@@ -57,7 +57,7 @@ public class onPlayerJoin implements Listener {
                                             playerEco.getMonthlySalary())
                             ))
             );
-            playerEco.setLastPaid(new Date()); //TODO: Voir pourquoi l'heure n'est pas prise en compte
+            playerEco.setLastPaid(new Date());
         }
 
         NinkaiEco.playerEcoMap.put(playerUUID, playerEco);
