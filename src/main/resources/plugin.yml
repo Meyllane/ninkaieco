@@ -1,0 +1,71 @@
+name: NinkaiEco
+version: '1.0'
+main: com.github.meyllane.ninkaiEco.NinkaiEco
+api-version: '1.20'
+depend: [Seisan_Plugin_For_Ninkai, CommandAPI, NBTAPI]
+permissions:
+  ninkaieco.balance.self.*:
+    description: Gives all .self permissions
+    children:
+      ninkaieco.balance.self: true
+      ninkaieco.balance.self.deposit: true
+      ninkaieco.balance.self.withdraw: true
+  ninkaieco.balance.self:
+    description: Allows to see your own balance
+  ninkaieco.balance.self.deposit:
+    description: Allows to deposit money on own account
+  ninkaieco.balance.self.withdraw:
+      description: Allows to withdraw money from own account
+
+  ninkaieco.balance.other.*:
+    description: Gives all .other permissions
+    children:
+      ninkaieco.balance.other.see: true
+      ninkaieco.balance.other.add: true
+      ninkaieco.balance.other.remove: true
+      ninkaieco.balance.other.set: true
+  ninkaieco.balance.other.see:
+    description: Allows to see others' balance
+  ninkaieco.balance.other.add:
+    description: Allows to add money to an account
+  ninkaieco.balance.other.remove:
+    description: Allows to remove money from an account
+  ninkaieco.balance.other.set:
+    description: Allows to set the balance of an account
+
+  ninkaieco.salary.*:
+    description: Gives all .salary permissions
+    children:
+      ninkaieco.salary.set: true
+      ninkaieco.salary.force: true
+      ninkaieco.salary.force.all: true
+      ninkaieco.salary.see: true
+  ninkaieco.salary.set:
+    description: Allows to set the automatic salary payment on or off
+  ninkaieco.salary.force:
+    description: Allows to force the payement of a salary and set the payement date as today
+  ninkaieco.salary.force.all:
+    description: Allows to force the payement of all saralies and update the payement date as today
+  ninkaieco.salary.see:
+    description: Allows to see if the automatic salary payment is on or off
+
+  ninkai.instit.*:
+    description: Gives all .instit permissions
+    children:
+      ninkaieco.instit.self.see: true
+      ninkaieco.instit.other.see: true
+  ninkaieco.instit.self.see:
+    description: Allows to see in which institution the player is
+  ninkaieco.instit.other.see:
+    description: Allows to see in which institution the target is
+  ninkaieco.instit.set:
+    description: Allows to set in which institution the target is
+
+  ninkaieco.artisan.sell:
+    description: Allows to create a sell order
+  ninkaieco.artisan.accept:
+    description: Allows to accept a sell order
+  ninkaieco.artisan.reject:
+    description: Allows to reject a sell order
+  ninkaieco.artisan.cancel:
+    description: Allows to cancal a sell order
