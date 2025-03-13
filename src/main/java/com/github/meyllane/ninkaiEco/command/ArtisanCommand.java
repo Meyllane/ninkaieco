@@ -60,7 +60,7 @@ public class ArtisanCommand {
                 .thenNested(
                         new LiteralArgument("reject"),
                         new IntegerArgument("orderID")
-                                .withPermission("ninkaieco.artisan.accept")
+                                .withPermission("ninkaieco.artisan.reject")
                                 .executes(ArtisanCommand::rejectSellOrder)
                 )
                 .then(

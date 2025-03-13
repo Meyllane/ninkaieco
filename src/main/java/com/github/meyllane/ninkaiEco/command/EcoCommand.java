@@ -66,9 +66,7 @@ public class EcoCommand {
                         )
                         .then(new LiteralArgument("deposit")
                                 .withPermission("ninkaieco.balance.self.deposit")
-                                .then(new IntegerArgument("amount").setOptional(true)
-                                        .executes(EcoCommand::deposit)
-                                )
+                                .executes(EcoCommand::deposit)
                         )
                         .then(new LiteralArgument("withdraw")
                                 .withPermission("ninkaieco.balance.self.withdraw")
@@ -136,8 +134,8 @@ public class EcoCommand {
     private static void addBalance(CommandSender sender, CommandArguments args) {
         if (!(sender instanceof Player player)) return;
 
-        Player target = (Player) args.get("target");
-        int amount = (int) args.getOrDefault("amount", 0);
+        Player target = args.getByClass("target", Player.class);
+        int amount = args.getByClassOrDefault("amount", Integer.class, 0);
         amount = Math.abs(amount); //Just in case the amount is negative
 
         NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).addBankMoney(amount);
@@ -149,7 +147,7 @@ public class EcoCommand {
                 .append(Component.text("."));
 
         Component targetMessage = mm.deserialize(
-                String.format("<color:#bfbfbf>%,d ryos ont été ajouté à votre compte.", amount)
+                String.format("<color:#bfbfbf>%,d ryos ont été ajoutés à votre compte.", amount)
         );
 
         adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
@@ -159,8 +157,8 @@ public class EcoCommand {
     private static void removeBalance(CommandSender sender, CommandArguments args) {
         if (!(sender instanceof Player player)) return;
 
-        Player target = (Player) args.get("target");
-        int amount = (int) args.getOrDefault("amount", 0);
+        Player target = args.getByClass("target", Player.class);
+        int amount = args.getByClassOrDefault("amount", Integer.class, 0);
         amount = Math.abs(amount); //Just in case the amount is negative
 
         NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).removeBankMoney(amount);
@@ -172,7 +170,7 @@ public class EcoCommand {
                 .append(Component.text("."));
 
         Component targetMessage = mm.deserialize(
-                String.format("<color:#bfbfbf>%,d ryos ont été retiré à votre compte.", amount)
+                String.format("<color:#bfbfbf>%,d ryos ont été retirés à votre compte.", amount)
         );
 
         adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
@@ -182,8 +180,8 @@ public class EcoCommand {
     private static void setBalance(CommandSender sender, CommandArguments args) {
         if (!(sender instanceof Player player)) return;
 
-        Player target = (Player) args.get("target");
-        int amount = (int) args.get("amount");
+        Player target = args.getByClass("target", Player.class);
+        int amount = args.getByClassOrDefault("amount", Integer.class, 0);
 
         NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).setBankMoney(amount);
 
@@ -338,6 +336,7 @@ public class EcoCommand {
                 PluginComponentProvider.getPluginHeader()
                         .append(mm.deserialize("<color:#bfbfbf>Vous avez forcé l'arrivée du salaire de "))
                         .append(target.displayName())
+                        .append(Component.text("."))
         );
 
         adventure.player(target).sendMessage(

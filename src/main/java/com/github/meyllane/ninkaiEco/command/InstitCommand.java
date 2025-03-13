@@ -24,11 +24,16 @@ public class InstitCommand {
     private static final MiniMessage mm = MiniMessage.miniMessage();
     private static final HashMap<String, Argument<?>> suggestions = new HashMap<>();
 
+    /**
+     * Registers the <code>CommandTree</code>
+     */
     public static void register() {
+        //Provides the correct Institution shortnames as suggestions
         suggestions.put("institShortName",
                 new StringArgument("institShortName").replaceSuggestions(ArgumentSuggestions.strings(info ->
                     Arrays.stream(Institution.values()).map(instit -> instit.shortName).toArray(String[]::new))));
 
+        //Provides the correct
         suggestions.put("institRankShortName",
                 new StringArgument("institRankShortName").replaceSuggestions(ArgumentSuggestions.strings(info -> {
                     String institShortName = (String) info.previousArgs().get("institShortName");
@@ -76,8 +81,7 @@ public class InstitCommand {
         Component infoPart = mm.deserialize(String.format("""
                 <color:#bfbfbf>
                 Institution: %s
-                Rang: %s
-                """, playerInstitution.getInstitution().name, playerInstitution.getRank().name));
+                Rang: %s""", playerInstitution.getInstitution().name, playerInstitution.getRank().name));
 
         adventure.player(player).sendMessage(
                 PluginComponentProvider.getPluginHeader()
