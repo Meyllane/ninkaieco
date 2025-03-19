@@ -13,7 +13,6 @@ public class PlayerInstitution {
     private final String playerUUID;
     private Institution institution;
     private InstitutionRank rank;
-    private boolean dirty = false;
 
     public PlayerInstitution(String playerUUID, Institution institution, InstitutionRank rank) {
         this.playerUUID = playerUUID;
@@ -31,20 +30,10 @@ public class PlayerInstitution {
 
     public void setInstitution(Institution institution) {
         this.institution = institution;
-        this.dirty = true;
     }
 
     public void setRank(InstitutionRank rank) {
         this.rank = rank;
-        this.dirty = true;
-    }
-
-    public boolean isDirty() {
-        return this.dirty;
-    }
-
-    public void setDirty(boolean bool) {
-        this.dirty = bool;
     }
 
     public void flush() {

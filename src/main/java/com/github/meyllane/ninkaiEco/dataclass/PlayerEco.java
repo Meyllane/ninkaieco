@@ -18,7 +18,6 @@ public class PlayerEco {
     private final RPRank rank;
     private final PlayerInstitution institution;
     private final RPRankSalary rpRankSalary;
-    private boolean dirty = false;
 
     public PlayerEco(String playerUUID, int bankMoney, Date lastPaid, RPRank rank, PlayerInstitution institution, RPRankSalary rpRankSalary) {
         this.playerUUID = playerUUID;
@@ -58,32 +57,20 @@ public class PlayerEco {
         return bankMoney;
     }
 
-    public boolean isDirty() {
-        return this.dirty;
-    }
-
-    public void setDirty(boolean bool) {
-        this.dirty = bool;
-    }
-
     public void setLastPaid(Date lastPaid) {
         this.lastPaid = lastPaid;
-        this.dirty = true;
     }
 
     public void setBankMoney(int bankMoney) {
         this.bankMoney = bankMoney;
-        this.dirty = true;
     }
 
     public void addBankMoney(int amount) {
         this.bankMoney += amount;
-        this.dirty = true;
     }
 
     public void removeBankMoney(int amount) {
         this.bankMoney -= amount;
-        this.dirty = true;
     }
 
     public PlayerInstitution getPlayerInstitution() {
@@ -103,6 +90,7 @@ public class PlayerEco {
             pst.setTimestamp(2, new java.sql.Timestamp(this.lastPaid.getTime()));
             pst.setString(3, this.playerUUID);
             pst.execute();
+            pst.close();
         } catch (SQLException e) {
             NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(Level.SEVERE, e.getMessage());
         }
