@@ -119,7 +119,7 @@ public class EcoCommand {
             toSend = mm.deserialize(message);
         } else {
             Component targetName = target.displayName();
-            String message = String.format(" a %,d ryos sur son compte et %,d ryos en cash.",
+            String message = String.format(" <color:#bfbfbf>a %,d ryos sur son compte et %,d ryos en cash.",
                     bankMoney, EcoCommand.getCashValue(target));
             toSend = targetName.append(mm.deserialize(message));
         }
@@ -327,7 +327,6 @@ public class EcoCommand {
         int amount = targetEco.getMonthlySalary();
 
         targetEco.addBankMoney(amount);
-        targetEco.setLastPaid(new Date());
 
         NinkaiEco.playerEcoMap.remove(targetUUID);
         NinkaiEco.playerEcoMap.put(targetUUID, targetEco);
@@ -353,54 +352,36 @@ public class EcoCommand {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, bukkitTask -> {
             //flush all PlayerEco in the HashMap
             NinkaiEco.playerEcoMap.forEach((key, playerEco) -> {
+                playerEco.addBankMoney(playerEco.getMonthlySalary());
                 playerEco.flush();
             });
+            String[] toSkip = NinkaiEco.playerEcoMap.keySet().toArray(new String[0]);
             try {
                 PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
                         """
                                 SELECT DISTINCT
-                                    PlayerInfo.rang,
-                                    PlayerInfo.uuid,
-                                    Institution.institution,
-                                    Institution.rank,
-                                    Money.bankMoney
-                                FROM
-                                    PlayerInfo
-                                INNER JOIN Institution ON PlayerInfo.uuid = Institution.playerUUID
-                                INNER JOIN Money ON Institution.playerUUID = Money.playerUUID;
+                                    rang,
+                                    uuid
+                                FROM PlayerInfo
+                                WHERE uuid NOT IN ?
                                 """
                 );
+                pst.setArray(1, Main.dbManager.getConnection().createArrayOf("int", toSkip));
                 ResultSet res = pst.executeQuery();
                 while (res.next()) {
-                    String playerUUID = res.getString("PlayerInfo.uuid");
-                    PlayerEco playerEco = new PlayerEco(
-                            playerUUID,
-                            res.getInt("Money.bankMoney"),
-                            new Date(),
-                            RPRank.getById(res.getInt("PlayerInfo.rang")),
-                            new PlayerInstitution(
-                                    playerUUID,
-                                    Institution.getByID(res.getInt("Institution.institution")),
-                                    InstitutionRank.getByID(res.getInt("Institution.rank"))
-                            ),
-                            RPRankSalary.getByRPRank(RPRank.getById(res.getInt("PlayerInfo.rang")))
-                    );
+                    String playerUUID = res.getString("uuid");
+                    RPRank rank = RPRank.getById(res.getInt("rang"));
+                    PlayerEco playerEco = PlayerEco.get(playerUUID, rank);
                     playerEco.addBankMoney(playerEco.getMonthlySalary());
                     playerEco.flush();
-
-                    //update the PlayerEco map
-
-                    if (NinkaiEco.playerEcoMap.containsKey(playerUUID))
-                    {
-                        NinkaiEco.playerEcoMap.remove(playerUUID);
-                        NinkaiEco.playerEcoMap.put(playerUUID, playerEco);
-                    }
                 }
-                if (!(sender instanceof Player player)) return;
-                adventure.player(player).sendMessage(
-                        PluginComponentProvider.getPluginHeader()
-                                .append(mm.deserialize("<color:#bfbfbf>Vous avez forcé l'arrivée des salaires de tous les joueurs."))
-                );
+                plugin.getServer().getScheduler().runTask(plugin, bukkitTask1 -> {
+                    if (!(sender instanceof Player player)) return;
+                    adventure.player(player).sendMessage(
+                            PluginComponentProvider.getPluginHeader()
+                                    .append(mm.deserialize("<color:#bfbfbf>Vous avez forcé l'arrivée des salaires de tous les joueurs."))
+                    );
+                });
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.SEVERE, e.getMessage());
             }
