@@ -25,12 +25,8 @@ import java.util.Date;
 import java.util.logging.Level;
 
 public class onPlayerJoin implements Listener {
-    NinkaiEco plugin;
+    private final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
     MiniMessage mm = MiniMessage.miniMessage();
-
-    public onPlayerJoin(NinkaiEco plugin) {
-        this.plugin = plugin;
-    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) throws SQLException {

@@ -31,8 +31,8 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         this.adventure = BukkitAudiences.create(this);
-        this.getServer().getPluginManager().registerEvents(new onPlayerJoin(this), this);
-        this.getServer().getPluginManager().registerEvents(new onPlayerQuit(this), this);
+        this.getServer().getPluginManager().registerEvents(new onPlayerJoin(), this);
+        this.getServer().getPluginManager().registerEvents(new onPlayerQuit(), this);
 
         EcoCommand.register();
         InstitCommand.register();

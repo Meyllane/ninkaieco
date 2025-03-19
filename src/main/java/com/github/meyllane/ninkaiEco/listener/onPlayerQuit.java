@@ -8,11 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public class onPlayerQuit implements Listener {
-    private final NinkaiEco plugin;
-
-    public onPlayerQuit(NinkaiEco plugin) {
-        this.plugin = plugin;
-    }
+    private final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
 
     @EventHandler()
     public void onQuit(PlayerQuitEvent event) {
