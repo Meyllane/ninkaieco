@@ -24,7 +24,12 @@ public enum BankOperationType {
      * Represents a received payment operation for a sell order. Because the seller does not get the whole amount (only the margin),
      * this operation represents the margin that the seller gets.
      */
-    SO_RECEIVED(4, "so_received");
+    SO_RECEIVED(4, "so_received"),
+
+    SALARY(5, "salary"),
+    ADD(6, "add"),
+    REMOVE(7, "remove"),
+    SET(8, "set");
 
     /**
      * The unique identifier for the bank operation type.

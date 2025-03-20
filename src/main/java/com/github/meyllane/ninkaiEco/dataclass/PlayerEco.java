@@ -1,9 +1,6 @@
 package com.github.meyllane.ninkaiEco.dataclass;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
-import com.github.meyllane.ninkaiEco.enums.Institution;
-import com.github.meyllane.ninkaiEco.enums.InstitutionDivision;
-import com.github.meyllane.ninkaiEco.enums.InstitutionRank;
 import com.github.meyllane.ninkaiEco.enums.RPRankSalary;
 import me.Seisan.plugin.Features.objectnum.RPRank;
 import me.Seisan.plugin.Main;
@@ -12,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 public class PlayerEco {
@@ -52,7 +51,6 @@ public class PlayerEco {
         return rank;
     }
 
-
     public int getBankMoney() {
         return bankMoney;
     }
@@ -90,11 +88,10 @@ public class PlayerEco {
         try {
             PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
                     """
-                            SELECT DISTINCT Money.*, PlayerInfo.rang, Institution.*
+                            SELECT DISTINCT Money.*, PlayerInfo.rang
                             FROM Money
                             INNER JOIN PlayerInfo ON Money.playerUUID = PlayerInfo.uuid
-                            INNER JOIN Institution ON Money.playerUUID = Institution.playerUUID
-                            WHERE Money.playerUUID = ?;
+                            WHERE Money.playerUUID = ?
                             """
             );
             pst.setString(1, playerUUID);
@@ -119,6 +116,33 @@ public class PlayerEco {
             );
         }
         return new PlayerEco(playerUUID, rank);
+    }
+
+    public static List<PlayerEco> getAll() {
+        try {
+            ArrayList<PlayerEco> list = new ArrayList<>();
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    """
+                            SELECT DISTINCT PlayerInfo.rang, Money.playerUUID
+                            FROM PlayerInfo
+                            INNER JOIN Money ON PlayerInfo.uuid = Money.playerUUID
+                            """
+            );
+            ResultSet res = pst.executeQuery();
+            while (res.next()) {
+                list.add(
+                        PlayerEco.get(res.getString("Money.playerUUID"), RPRank.getById(res.getInt("PlayerInfo.rang")))
+                );
+            }
+            pst.close();
+            return list;
+        } catch (SQLException e) {
+            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
+                    Level.SEVERE,
+                    "Error while fetching all the PlayerEco: " + e.getMessage()
+            );
+        }
+        return null;
     }
 
     private int create() {

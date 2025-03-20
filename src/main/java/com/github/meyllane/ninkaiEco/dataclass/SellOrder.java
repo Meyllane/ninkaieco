@@ -129,7 +129,10 @@ public class SellOrder {
             this.ID = res.getInt(1);
             pst.close();
         } catch (SQLException e) {
-            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(Level.SEVERE, e.getMessage());
+            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
+                    Level.SEVERE,
+                    "Error while creating SellOrder: " + e.getMessage()
+            );
         }
     }
 
@@ -145,7 +148,10 @@ public class SellOrder {
             pst.execute();
             pst.close();
         } catch (SQLException e) {
-            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(Level.SEVERE, e.getMessage());
+            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
+                    Level.SEVERE,
+                    "Error while updating SellOrder: " + e.getMessage()
+            );
         }
     }
 

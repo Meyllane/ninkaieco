@@ -4,8 +4,6 @@ import com.github.meyllane.ninkaiEco.NinkaiEco;
 
 import com.github.meyllane.ninkaiEco.dataclass.BankOperation;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerCash;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerInstitution;
 import com.github.meyllane.ninkaiEco.enums.*;
 import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import de.tr7zw.nbtapi.NBT;
@@ -15,8 +13,6 @@ import dev.jorel.commandapi.arguments.IntegerArgument;
 import dev.jorel.commandapi.arguments.LiteralArgument;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
-import me.Seisan.plugin.Features.objectnum.RPRank;
-import me.Seisan.plugin.Main;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -25,12 +21,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitScheduler;
-
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
-import java.util.logging.Level;
 
 
 public class EcoCommand {
@@ -135,8 +126,7 @@ public class EcoCommand {
         if (!(sender instanceof Player player)) return;
 
         Player target = args.getByClass("target", Player.class);
-        int amount = args.getByClassOrDefault("amount", Integer.class, 0);
-        amount = Math.abs(amount); //Just in case the amount is negative
+        int amount = Math.abs(args.getByClassOrDefault("amount", Integer.class, 0));
 
         NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).addBankMoney(amount);
 
@@ -152,14 +142,22 @@ public class EcoCommand {
 
         adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
         adventure.player(target).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
+
+        scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
+            new BankOperation(
+                    player.getUniqueId().toString(),
+                    target.getUniqueId().toString(),
+                    amount,
+                    BankOperationType.ADD
+            ).flush();
+        });
     }
 
     private static void removeBalance(CommandSender sender, CommandArguments args) {
         if (!(sender instanceof Player player)) return;
 
         Player target = args.getByClass("target", Player.class);
-        int amount = args.getByClassOrDefault("amount", Integer.class, 0);
-        amount = Math.abs(amount); //Just in case the amount is negative
+        int amount = Math.abs(args.getByClassOrDefault("amount", Integer.class, 0));
 
         NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).removeBankMoney(amount);
 
@@ -175,6 +173,14 @@ public class EcoCommand {
 
         adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
         adventure.player(target).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
+        scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
+            new BankOperation(
+                    player.getUniqueId().toString(),
+                    target.getUniqueId().toString(),
+                    amount,
+                    BankOperationType.REMOVE
+            ).flush();
+        });
     }
 
     private static void setBalance(CommandSender sender, CommandArguments args) {
@@ -197,6 +203,14 @@ public class EcoCommand {
 
         adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
         adventure.player(target).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
+        scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
+            new BankOperation(
+                    player.getUniqueId().toString(),
+                    target.getUniqueId().toString(),
+                    amount,
+                    BankOperationType.SET
+            ).flush();
+        });
     }
 
     private static void deposit(CommandSender sender, CommandArguments args) {
@@ -319,73 +333,11 @@ public class EcoCommand {
     }
 
     private static void forceSalary(CommandSender sender, CommandArguments args) {
-        if (!(sender instanceof Player player)) return;
 
-        Player target = args.getByClass("target", Player.class);
-        String targetUUID = target.getUniqueId().toString();
-        PlayerEco targetEco = NinkaiEco.playerEcoMap.get(targetUUID);
-        int amount = targetEco.getMonthlySalary();
-
-        targetEco.addBankMoney(amount);
-
-        NinkaiEco.playerEcoMap.remove(targetUUID);
-        NinkaiEco.playerEcoMap.put(targetUUID, targetEco);
-
-        adventure.player(player).sendMessage(
-                PluginComponentProvider.getPluginHeader()
-                        .append(mm.deserialize("<color:#bfbfbf>Vous avez forcé l'arrivée du salaire de "))
-                        .append(target.displayName())
-                        .append(Component.text("."))
-        );
-
-        adventure.player(target).sendMessage(
-                PluginComponentProvider.getPluginHeader()
-                        .append(mm.deserialize(String.format(
-                                "<color:#bfbfbf>Votre salaire vous a été donné en avance ! %,d ryos ont été ajoutés à votre compte.",
-                                amount
-                        )))
-        );
     }
 
     private static void forceSalaryAll(CommandSender sender, CommandArguments args) {
-        NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, bukkitTask -> {
-            //flush all PlayerEco in the HashMap
-            NinkaiEco.playerEcoMap.forEach((key, playerEco) -> {
-                playerEco.addBankMoney(playerEco.getMonthlySalary());
-                playerEco.flush();
-            });
-            String[] toSkip = NinkaiEco.playerEcoMap.keySet().toArray(new String[0]);
-            try {
-                PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
-                        """
-                                SELECT DISTINCT
-                                    rang,
-                                    uuid
-                                FROM PlayerInfo
-                                WHERE uuid NOT IN ?
-                                """
-                );
-                pst.setArray(1, Main.dbManager.getConnection().createArrayOf("int", toSkip));
-                ResultSet res = pst.executeQuery();
-                while (res.next()) {
-                    String playerUUID = res.getString("uuid");
-                    RPRank rank = RPRank.getById(res.getInt("rang"));
-                    PlayerEco playerEco = PlayerEco.get(playerUUID, rank);
-                    playerEco.addBankMoney(playerEco.getMonthlySalary());
-                    playerEco.flush();
-                }
-                plugin.getServer().getScheduler().runTask(plugin, bukkitTask1 -> {
-                    if (!(sender instanceof Player player)) return;
-                    adventure.player(player).sendMessage(
-                            PluginComponentProvider.getPluginHeader()
-                                    .append(mm.deserialize("<color:#bfbfbf>Vous avez forcé l'arrivée des salaires de tous les joueurs."))
-                    );
-                });
-            } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, e.getMessage());
-            }
-        });
+
     }
 
     private static List<PlayerCash> getPlayerCash(Player player) {

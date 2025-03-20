@@ -4,8 +4,12 @@ import com.github.meyllane.ninkaiEco.command.ArtisanCommand;
 import com.github.meyllane.ninkaiEco.command.EcoCommand;
 import com.github.meyllane.ninkaiEco.command.InstitCommand;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
+import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
+import com.github.meyllane.ninkaiEco.dataclass.SalaryTimer;
 import com.github.meyllane.ninkaiEco.dataclass.SellOrder;
+import com.github.meyllane.ninkaiEco.enums.SalaryStatus;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
+import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
 import com.github.meyllane.ninkaiEco.listener.onPlayerJoin;
 import com.github.meyllane.ninkaiEco.listener.onPlayerQuit;
 import me.Seisan.plugin.Main;
@@ -18,7 +22,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 
 public final class NinkaiEco extends JavaPlugin implements Listener {
@@ -33,6 +39,7 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         this.adventure = BukkitAudiences.create(this);
         this.getServer().getPluginManager().registerEvents(new onPlayerJoin(), this);
         this.getServer().getPluginManager().registerEvents(new onPlayerQuit(), this);
+        this.getServer().getPluginManager().registerEvents(new onPlayerEcoLoaded(), this);
 
         EcoCommand.register();
         InstitCommand.register();
@@ -45,6 +52,10 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         this.salaryStart = this.config.getBoolean("salary-start");
 
         this.closeExpiredSellOrder();
+
+        if (!SalaryTimer.isLastSalaryDateSet()) SalaryTimer.insertLastSalaryDate();
+
+        if (this.salaryStart) this.handlePlayerSalaries();
     }
 
     @Override
@@ -87,5 +98,23 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         } catch (SQLException e) {
             this.getLogger().log(Level.SEVERE, e.getMessage());
         }
+    }
+
+    private void handlePlayerSalaries() {
+        List<PlayerEco> playerEcoList = PlayerEco.getAll();
+        if (!SalaryTimer.isTimeForSalary()) return;
+        if (playerEcoList == null) return;
+
+        playerEcoList.forEach(playerEco -> this.getServer().getScheduler().runTaskAsynchronously(this, bukkitTask -> {
+            if (playerEco.getMonthlySalary() == 0) return;
+            PlayerSalary salary = new PlayerSalary(
+                    "Server",
+                    playerEco.getPlayerUUID(),
+                    playerEco.getMonthlySalary(),
+                    SalaryStatus.PENDING);
+            salary.flush();
+        }));
+
+        SalaryTimer.setLastSalaryDate(new Date());
     }
 }

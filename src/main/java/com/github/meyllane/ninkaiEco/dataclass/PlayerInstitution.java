@@ -4,7 +4,6 @@ import com.github.meyllane.ninkaiEco.NinkaiEco;
 import com.github.meyllane.ninkaiEco.enums.Institution;
 import com.github.meyllane.ninkaiEco.enums.InstitutionDivision;
 import com.github.meyllane.ninkaiEco.enums.InstitutionRank;
-import me.Seisan.plugin.Features.data.NinjaArtsDB;
 import me.Seisan.plugin.Main;
 
 import java.sql.PreparedStatement;

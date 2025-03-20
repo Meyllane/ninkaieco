@@ -39,7 +39,7 @@ public class onPlayerJoin implements Listener {
         NinkaiEco.playerEcoMap.put(playerUUID, playerEco);
         CommandAPI.updateRequirements(player);
 
-        new PlayerEcoLoadedEvent(playerEco).callEvent();
+        new PlayerEcoLoadedEvent(event.getPlayer(), playerEco).callEvent();
     }
 
     private RPRank getRPRank(String playerUUID) {
