@@ -4,6 +4,7 @@ import com.github.meyllane.ninkaiEco.NinkaiEco;
 import com.github.meyllane.ninkaiEco.enums.RPRankSalary;
 import me.Seisan.plugin.Features.objectnum.RPRank;
 import me.Seisan.plugin.Main;
+import org.checkerframework.checker.units.qual.N;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -84,13 +85,14 @@ public class PlayerEco {
         this.institution.flush();
     }
 
-    public static PlayerEco get(String playerUUID, RPRank rank) {
+    public static PlayerEco get(String playerUUID) {
+        RPRank rank = PlayerEco.getRank(playerUUID);
         try {
+
             PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
                     """
-                            SELECT DISTINCT Money.*, PlayerInfo.rang
+                            SELECT DISTINCT Money.*
                             FROM Money
-                            INNER JOIN PlayerInfo ON Money.playerUUID = PlayerInfo.uuid
                             WHERE Money.playerUUID = ?
                             """
             );
@@ -118,20 +120,40 @@ public class PlayerEco {
         return new PlayerEco(playerUUID, rank);
     }
 
+    public static RPRank getRank(String playerUUID) {
+        try {
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    "SELECT rang FROM PlayerInfo WHERE uuid=?"
+            );
+            pst.setString(1, playerUUID);
+            ResultSet res = pst.executeQuery();
+            if (res.next()) {
+                return RPRank.getById(res.getInt("rang"));
+            }
+            pst.close();
+            return RPRank.STUDENT;
+        } catch (SQLException e) {
+            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
+                    Level.SEVERE,
+                    "Error while fetching RPRank for PlayerEco: " + e.getMessage()
+            );
+        }
+        return RPRank.STUDENT;
+    }
+
     public static List<PlayerEco> getAll() {
         try {
             ArrayList<PlayerEco> list = new ArrayList<>();
             PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
                     """
-                            SELECT DISTINCT PlayerInfo.rang, Money.playerUUID
-                            FROM PlayerInfo
-                            INNER JOIN Money ON PlayerInfo.uuid = Money.playerUUID
+                            SELECT DISTINCT Money.playerUUID
+                            FROM Money
                             """
             );
             ResultSet res = pst.executeQuery();
             while (res.next()) {
                 list.add(
-                        PlayerEco.get(res.getString("Money.playerUUID"), RPRank.getById(res.getInt("PlayerInfo.rang")))
+                        PlayerEco.get(res.getString("Money.playerUUID"))
                 );
             }
             pst.close();

@@ -33,8 +33,7 @@ public class onPlayerJoin implements Listener {
         Player player = event.getPlayer();
         String playerUUID = player.getUniqueId().toString();
 
-        RPRank rank = this.getRPRank(playerUUID);
-        PlayerEco playerEco = PlayerEco.get(playerUUID, rank);
+        PlayerEco playerEco = PlayerEco.get(playerUUID);
 
         NinkaiEco.playerEcoMap.put(playerUUID, playerEco);
         CommandAPI.updateRequirements(player);

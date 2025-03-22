@@ -114,8 +114,8 @@ public class SellOrder {
                             """,
                     Statement.RETURN_GENERATED_KEYS
             );
-            pst.setString(1, this.buyerUUID);
-            pst.setString(2, this.sellerUUID);
+            pst.setString(1, this.sellerUUID);
+            pst.setString(2, this.buyerUUID);
             pst.setString(3, this.detail);
             pst.setInt(4, this.price);
             pst.setInt(5, this.marginPerc);

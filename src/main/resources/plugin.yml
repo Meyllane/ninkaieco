@@ -1,8 +1,8 @@
 name: NinkaiEco
-version: '1.0.1'
+version: '1.0.2'
 main: com.github.meyllane.ninkaiEco.NinkaiEco
 api-version: '1.20'
-depend: [Seisan_Plugin_For_Ninkai, CommandAPI, NBTAPI]
+depend: [Seisan_Plugin_For_Ninkai, CommandAPI, NBTAPI, OpenInv]
 permissions:
   ninkaieco.balance.self.*:
     description: Gives all .self permissions

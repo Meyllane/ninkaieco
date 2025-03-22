@@ -26,7 +26,7 @@ public class onPlayerEcoLoaded implements Listener {
         this.handlePlayerSalary(event.getPlayer(), event.getPlayerEco());
     }
 
-    private void handlePlayerSalary(Player player, PlayerEco playerEco) {
+    public void handlePlayerSalary(Player player, PlayerEco playerEco) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, bukkitTask -> {
             ArrayList<PlayerSalary> list = PlayerSalary.getPendingPlayerSalaries(playerEco.getPlayerUUID());
             if (list.isEmpty()) return;

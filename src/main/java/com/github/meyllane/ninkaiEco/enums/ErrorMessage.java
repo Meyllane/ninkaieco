@@ -7,7 +7,8 @@ public enum ErrorMessage {
     NOT_EMITTER_OF_SELL_ORDER("Vous n'êtes pas à l'origine de cette commande."),
     ALREADY_PROCESS_SELL_ORDER("Cette commande a déjà été traité."),
     NOT_ENOUGHT_MONEY_FOR_SELL_ORDER("Vous n'avez pas assez d'argent pour accepter cette vente."),
-    UNKNOWN_ERROR("Une erreur inattendue est survenue. Contactez l'équipe technique.");
+    UNKNOWN_ERROR("Une erreur inattendue est survenue. Contactez l'équipe technique."),
+    NONE_EXISTING_OR_NEVER_SEEN_PLAYER("Lae joueur.euse n'existe pas ou ne s'est jamais connecté.e sur le serveur.");
 
     public final String message;
 

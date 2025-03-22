@@ -6,23 +6,10 @@ plugins {
 }
 
 group = 'com.github.meyllane'
-version = '1.0.1'
+version = '1.0.2'
 
 repositories {
-    mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
-    maven {
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/groups/public/"
-    }
-    maven { url = "https://repo.codemc.org/repository/maven-public/" }
-    maven {
-        name = "CodeMC"
-        url = uri("https://repo.codemc.io/repository/maven-public/")
-    }
+
 }
 
 dependencies {
@@ -31,6 +18,7 @@ dependencies {
     compileOnly "dev.jorel:commandapi-bukkit-core:9.7.0"
     compileOnly "dev.jorel:commandapi-annotations:9.7.0"
     compileOnly("de.tr7zw:item-nbt-api-plugin:2.13.1")
+    compileOnly 'com.github.Jikoo.OpenInv:openinvplugincore:4.4.1'
     annotationProcessor "dev.jorel:commandapi-annotations:9.7.0"
     implementation "net.kyori:adventure-api:4.19.0"
     implementation "net.kyori:adventure-platform-bukkit:4.3.4"

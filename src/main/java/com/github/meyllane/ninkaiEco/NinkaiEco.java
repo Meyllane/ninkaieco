@@ -55,7 +55,7 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
 
         if (!SalaryTimer.isLastSalaryDateSet()) SalaryTimer.insertLastSalaryDate();
 
-        if (this.salaryStart) this.handlePlayerSalaries();
+        if (this.salaryStart && SalaryTimer.isTimeForSalary()) this.handlePlayerSalaries();
     }
 
     @Override
@@ -100,9 +100,8 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         }
     }
 
-    private void handlePlayerSalaries() {
+    public void handlePlayerSalaries() {
         List<PlayerEco> playerEcoList = PlayerEco.getAll();
-        if (!SalaryTimer.isTimeForSalary()) return;
         if (playerEcoList == null) return;
 
         playerEcoList.forEach(playerEco -> this.getServer().getScheduler().runTaskAsynchronously(this, bukkitTask -> {
