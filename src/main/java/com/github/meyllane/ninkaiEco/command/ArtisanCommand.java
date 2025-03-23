@@ -19,6 +19,7 @@ import dev.jorel.commandapi.executors.CommandArguments;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -44,7 +45,7 @@ public class ArtisanCommand {
                                 .withPermission("ninkaieco.artisan.sell")
                                 .withRequirement(ArtisanCommand::isMerchant)
                                 .thenNested(
-                                        new PlayerArgument("buyer"),
+                                        new OfflinePlayerArgument("buyer"),
                                         new IntegerArgument("price"),
                                         new IntegerArgument("margin", 0, 20),
                                         new GreedyStringArgument("detail")
@@ -97,10 +98,14 @@ public class ArtisanCommand {
     public static void createSellOrder(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player seller)) return;
 
-        Player buyer = args.getByClass("buyer", Player.class);
+        OfflinePlayer buyer = args.getByClass("buyer", OfflinePlayer.class);
         String detail = args.getByClass("detail", String.class);
         int price = args.getByClass("price", Integer.class);
         int margin = args.getByClass("margin", Integer.class);
+
+        if (buyer == null) throw CommandAPIBukkit.failWithAdventureComponent(
+                PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_OR_NEVER_SEEN_PLAYER.message)
+        );
 
         if (buyer == seller) {
             throw CommandAPIBukkit.failWithAdventureComponent(PluginComponentProvider.getErrorComponent(ErrorMessage.CANT_SELL_TO_SELF.message));
@@ -117,6 +122,8 @@ public class ArtisanCommand {
                 SellOrderStatus.PENDING
         );
 
+        boolean isConnected = buyer.isConnected();
+
         scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
             sellOrder.flush();
 
@@ -132,21 +139,28 @@ public class ArtisanCommand {
             Component optionPart = accept.append(Component.text(" ")).append(reject);
 
             scheduler.runTask(plugin, bukkitTask1 -> {
+                Component targetComponent;
+                if (isConnected) {
+                    targetComponent = buyer.getPlayer().displayName();
+                } else {
+                    targetComponent = Component.text(buyer.getName());
+                }
                 adventure.player(seller).sendMessage(
                         PluginComponentProvider.getPluginHeader()
                                 .append(mm.deserialize("<color:#bfbfbf>Vous avez proposé à "))
-                                .append(buyer.displayName())
+                                .append(targetComponent)
                                 .append(mm.deserialize("<color:#bfbfbf> la vente suivante :"))
                                 .append(infoPart)
                 );
-
-                adventure.player(buyer).sendMessage(
-                        PluginComponentProvider.getPluginHeader()
-                                .append(seller.displayName())
-                                .append(mm.deserialize("<color:#bfbfbf> vous a proposé la vente suivante :"))
-                                .append(infoPart)
-                                .append(optionPart)
-                );
+                if (isConnected) {
+                    adventure.player(buyer.getPlayer()).sendMessage(
+                            PluginComponentProvider.getPluginHeader()
+                                    .append(seller.displayName())
+                                    .append(mm.deserialize("<color:#bfbfbf> vous a proposé la vente suivante :"))
+                                    .append(infoPart)
+                                    .append(optionPart)
+                    );
+                }
             });
         });
     }

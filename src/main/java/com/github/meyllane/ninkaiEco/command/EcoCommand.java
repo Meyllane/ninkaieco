@@ -7,11 +7,9 @@ import com.github.meyllane.ninkaiEco.dataclass.PlayerCash;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
 import com.github.meyllane.ninkaiEco.enums.*;
-import com.github.meyllane.ninkaiEco.utils.PlayerLoader;
 import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import com.lishid.openinv.OpenInv;
 import de.tr7zw.nbtapi.NBT;
-import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIBukkit;
 import dev.jorel.commandapi.CommandTree;
 import dev.jorel.commandapi.arguments.*;
@@ -24,7 +22,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -165,7 +162,7 @@ public class EcoCommand {
     private static void addBalance(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player player)) return;
 
-        Player target = PlayerLoader.getOrLoadPlayer(args.getByClass("target", OfflinePlayer.class));
+        OfflinePlayer target = args.getByClass("target", OfflinePlayer.class);
 
         if (target == null) throw CommandAPIBukkit.failWithAdventureComponent(
                 PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_OR_NEVER_SEEN_PLAYER.message)
@@ -176,12 +173,15 @@ public class EcoCommand {
         int amount = Math.abs(args.getByClassOrDefault("amount", Integer.class, 0));
 
         scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
+            Component targetComponent;
             if (isConnected) {
                 NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).addBankMoney(amount);
+                targetComponent = target.getPlayer().displayName();
             } else {
                 PlayerEco targetEco = PlayerEco.get(target.getUniqueId().toString());
                 targetEco.addBankMoney(amount);
-                targetEco.flush();
+                scheduler.runTaskAsynchronously(plugin, targetEco::flush);
+                targetComponent = Component.text(target.getName());
             }
 
             new BankOperation(
@@ -195,7 +195,7 @@ public class EcoCommand {
                 Component playerMessage = mm.deserialize(
                                 String.format("<color:#bfbfbf>Vous avez ajouté %,d ryos sur le compte de ", amount)
                         )
-                        .append(target.displayName())
+                        .append(targetComponent)
                         .append(Component.text("."));
 
                 adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
@@ -204,7 +204,7 @@ public class EcoCommand {
                     Component targetMessage = mm.deserialize(
                             String.format("<color:#bfbfbf>%,d ryos ont été ajoutés à votre compte.", amount)
                     );
-                    adventure.player(target).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
+                    adventure.player(target.getPlayer()).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
                 }
             });
         });
@@ -213,7 +213,7 @@ public class EcoCommand {
     private static void removeBalance(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player player)) return;
 
-        Player target = PlayerLoader.getOrLoadPlayer(args.getByClass("target", OfflinePlayer.class));
+        OfflinePlayer target = args.getByClass("target", OfflinePlayer.class);
         int amount = Math.abs(args.getByClassOrDefault("amount", Integer.class, 0));
 
         if (target == null) throw CommandAPIBukkit.failWithAdventureComponent(
@@ -222,12 +222,15 @@ public class EcoCommand {
 
         boolean isConnected = target.isConnected();
         scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
+            Component targetComponent;
             if (isConnected) {
                 NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).removeBankMoney(amount);
+                targetComponent = target.getPlayer().displayName();
             } else {
                 PlayerEco targetEco = PlayerEco.get(target.getUniqueId().toString());
                 targetEco.removeBankMoney(amount);
-                targetEco.flush();
+                scheduler.runTaskAsynchronously(plugin, targetEco::flush);
+                targetComponent = Component.text(target.getName());
             }
             new BankOperation(
                     player.getUniqueId().toString(),
@@ -240,7 +243,7 @@ public class EcoCommand {
                 Component playerMessage = mm.deserialize(
                                 String.format("<color:#bfbfbf>Vous avez retiré %,d ryos sur le compte de ", amount)
                         )
-                        .append(target.displayName())
+                        .append(targetComponent)
                         .append(Component.text("."));
                 adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(playerMessage));
 
@@ -249,7 +252,7 @@ public class EcoCommand {
                     Component targetMessage = mm.deserialize(
                             String.format("<color:#bfbfbf>%,d ryos ont été retirés à votre compte.", amount)
                     );
-                    adventure.player(target).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
+                    adventure.player(target.getPlayer()).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
                 }
             });
         });
@@ -258,7 +261,7 @@ public class EcoCommand {
     private static void setBalance(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player player)) return;
 
-        Player target = PlayerLoader.getOrLoadPlayer(args.getByClass("target", OfflinePlayer.class));
+        OfflinePlayer target = args.getByClass("target", OfflinePlayer.class);
         int amount = args.getByClassOrDefault("amount", Integer.class, 0);
 
         if (target == null) throw CommandAPIBukkit.failWithAdventureComponent(
@@ -268,12 +271,15 @@ public class EcoCommand {
         boolean isConnected = target.isConnected();
 
         scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
+            Component targetComponent;
             if (isConnected) {
                 NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).setBankMoney(amount);
+                targetComponent = target.getPlayer().displayName();
             } else {
                 PlayerEco targetEco = PlayerEco.get(target.getUniqueId().toString());
                 targetEco.setBankMoney(amount);
-                targetEco.flush();
+                scheduler.runTaskAsynchronously(plugin, targetEco::flush);
+                targetComponent = Component.text(target.getName());
             }
             new BankOperation(
                     player.getUniqueId().toString(),
@@ -284,7 +290,7 @@ public class EcoCommand {
 
             scheduler.runTask(plugin, bukkitTask1 -> {
                 Component playerMessage = mm.deserialize("<color:#bfbfbf>Vous avez fixé le compte de ")
-                        .append(target.displayName())
+                        .append(targetComponent)
                         .append(Component.text(
                                 String.format(" à %,d ryos.", amount)
                         ));
@@ -294,14 +300,10 @@ public class EcoCommand {
                     Component targetMessage = mm.deserialize(
                             String.format("<color:#bfbfbf>Votre compte a été fixé à %,d ryos.", amount)
                     );
-                    adventure.player(target).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
+                    adventure.player(target.getPlayer()).sendMessage(PluginComponentProvider.getPluginHeader().append(targetMessage));
                 }
             });
         });
-
-
-
-
     }
 
     private static void deposit(CommandSender sender, CommandArguments args) {

@@ -1,5 +1,5 @@
 name: NinkaiEco
-version: '1.0.2'
+version: '1.0.3'
 main: com.github.meyllane.ninkaiEco.NinkaiEco
 api-version: '1.20'
 depend: [Seisan_Plugin_For_Ninkai, CommandAPI, NBTAPI, OpenInv]
