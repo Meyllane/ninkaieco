@@ -3,26 +3,33 @@ package com.github.meyllane.ninkaiEco.command;
 import com.github.meyllane.ninkaiEco.NinkaiEco;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerInstitution;
+import com.github.meyllane.ninkaiEco.enums.ErrorMessage;
 import com.github.meyllane.ninkaiEco.enums.Institution;
 import com.github.meyllane.ninkaiEco.enums.InstitutionRank;
 import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIBukkit;
 import dev.jorel.commandapi.CommandTree;
 import dev.jorel.commandapi.arguments.*;
+import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
 import dev.jorel.commandapi.executors.CommandArguments;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.Arrays;
 import java.util.HashMap;
 
 public class InstitCommand {
-    private static final BukkitAudiences adventure = NinkaiEco.getPlugin(NinkaiEco.class).adventure();
+    private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
+    private static final BukkitAudiences adventure = plugin.adventure();
     private static final MiniMessage mm = MiniMessage.miniMessage();
     private static final HashMap<String, Argument<?>> suggestions = new HashMap<>();
+    private static final BukkitScheduler scheduler = plugin.getServer().getScheduler();
 
     /**
      * Registers the <code>CommandTree</code>
@@ -48,7 +55,7 @@ public class InstitCommand {
         new CommandTree("instit")
                 .withPermission("ninkaieco.instit.self.see")
                 .executes(InstitCommand::seeInstit)
-                .then(new PlayerArgument("target")
+                .then(new OfflinePlayerArgument("target")
                         .then(new LiteralArgument("set")
                                 .thenNested(
                                         suggestions.get("institShortName"),
@@ -66,36 +73,59 @@ public class InstitCommand {
     private static void seeInstit(CommandSender sender, CommandArguments args) {
         if (!(sender instanceof Player player)) return;
 
-        Player target = args.getByClassOrDefault("target", Player.class, player);
-        PlayerInstitution playerInstitution = NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).getPlayerInstitution();
+        OfflinePlayer target = args.getByClassOrDefault("target", OfflinePlayer.class, player);
 
         Component message;
-        if (player == target) {
+        if (player.getUniqueId().equals(target.getUniqueId())) {
             message = mm.deserialize("<color:#bfbfbf>Votre profil d'institution :<newline>");
         } else {
+            Component targetComponent;
+            if (target.isConnected()) {
+                targetComponent = target.getPlayer().displayName();
+            } else {
+                targetComponent = Component.text(target.getName());
+            }
             message = mm.deserialize("<color:#bfbfbf>Profil d'institution de ")
-                    .append(target.displayName())
+                    .append(targetComponent)
                     .append(mm.deserialize("<newline>"));
         }
+        boolean isConnected = target.isConnected();
 
-        Component infoPart = mm.deserialize(String.format("""
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            PlayerInstitution targetInstit;
+            if (isConnected) {
+                targetInstit = NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).getPlayerInstitution();
+            } else {
+                targetInstit = PlayerEco.get(target.getUniqueId().toString()).getPlayerInstitution();
+            }
+
+            scheduler.runTask(plugin, () -> {
+                Component infoPart = mm.deserialize(String.format("""
                 <color:#bfbfbf>
                 Institution: %s
-                Rang: %s""", playerInstitution.getInstitution().name, playerInstitution.getRank().name));
+                Rang: %s""", targetInstit.getInstitution().name, targetInstit.getRank().name));
 
-        adventure.player(player).sendMessage(
-                PluginComponentProvider.getPluginHeader()
-                        .append(message)
-                        .append(infoPart)
-        );
+                adventure.player(player).sendMessage(
+                        PluginComponentProvider.getPluginHeader()
+                                .append(message)
+                                .append(infoPart)
+                );
+            });
+        });
     }
 
-    private static void setPlayerInstitution(CommandSender sender, CommandArguments args) {
+    private static void setPlayerInstitution(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player player)) return;
 
-        Player target = args.getByClass("target", Player.class);
+        OfflinePlayer target = args.getByClass("target", OfflinePlayer.class);
         Institution instit = Institution.getByShortName(args.getByClass("institShortName", String.class));
         InstitutionRank rank = InstitutionRank.getByShortName(args.getByClass("institRankShortName", String.class));
+
+        if (target == null) {
+            throw CommandAPIBukkit.failWithAdventureComponent(
+                    PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_OR_NEVER_SEEN_PLAYER.message)
+            );
+        }
 
         //If the institution is none, then the rank can't be anything else than none
         if (instit == Institution.NONE && rank != InstitutionRank.NONE) {
@@ -107,33 +137,50 @@ public class InstitCommand {
             rank = InstitutionRank.MEMBER;
         }
 
-        PlayerEco targetEco = NinkaiEco.playerEcoMap.get(target.getUniqueId().toString());
-        targetEco.getPlayerInstitution().setInstitution(instit);
-        targetEco.getPlayerInstitution().setRank(rank);
+        boolean isConnected = target.isConnected();
 
-        Component infoPart = mm.deserialize(String.format("""
+        InstitutionRank finalRank = rank;
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            PlayerEco targetEco;
+            Component targetComponent;
+            if (isConnected) {
+                targetEco = NinkaiEco.playerEcoMap.get(target.getUniqueId().toString());
+                targetComponent = target.getPlayer().displayName();
+            } else {
+                targetEco = PlayerEco.get(target.getUniqueId().toString());
+                targetComponent = Component.text(target.getName());
+            }
+            targetEco.getPlayerInstitution().setInstitution(instit);
+            targetEco.getPlayerInstitution().setRank(finalRank);
+
+            if (!isConnected) scheduler.runTaskAsynchronously(plugin, targetEco::flush);
+
+            scheduler.runTask(plugin, () -> {
+                Component infoPart = mm.deserialize(String.format("""
                 <color:#bfbfbf>
                 Institution: %s
                 Rang: %s
-                """, instit.name, rank.name));
+                """, instit.name, finalRank.name));
 
-        Component playerPart = mm.deserialize("<color:#bfbfbf>Vous avez mis à jour le profil d'institution de ")
-                .append(target.displayName());
+                Component playerPart = mm.deserialize("<color:#bfbfbf>Vous avez mis à jour le profil d'institution de ")
+                        .append(targetComponent);
 
-        Component targetPart = mm.deserialize("<color:#bfbfbf>Votre profil d'institution a été mis à jour :");
+                adventure.player(player).sendMessage(
+                        PluginComponentProvider.getPluginHeader()
+                                .append(playerPart)
+                                .append(infoPart)
+                );
 
-        adventure.player(player).sendMessage(
-                PluginComponentProvider.getPluginHeader()
-                        .append(playerPart)
-                        .append(infoPart)
-        );
-
-        adventure.player(target).sendMessage(
-                PluginComponentProvider.getPluginHeader()
-                        .append(targetPart)
-                        .append(infoPart)
-        );
-
-        CommandAPI.updateRequirements(target);
+                if (isConnected) {
+                    Component targetPart = mm.deserialize("<color:#bfbfbf>Votre profil d'institution a été mis à jour :");
+                    adventure.player(target.getPlayer()).sendMessage(
+                            PluginComponentProvider.getPluginHeader()
+                                    .append(targetPart)
+                                    .append(infoPart)
+                    );
+                    CommandAPI.updateRequirements(target.getPlayer());
+                }
+            });
+        });
     }
 }
