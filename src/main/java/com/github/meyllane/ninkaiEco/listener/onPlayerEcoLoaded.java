@@ -25,44 +25,8 @@ public class onPlayerEcoLoaded implements Listener {
     @EventHandler()
     public void onEcoLoaded(PlayerEcoLoadedEvent event) {
         Player player = event.getPlayer();
-        this.handlePlayerSalary(player, event.getPlayerEco());
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> this.handlePlayerNotifications(player));
-    }
-
-    public void handlePlayerSalary(Player player, PlayerEco playerEco) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, bukkitTask -> {
-            ArrayList<PlayerSalary> list = PlayerSalary.getPendingPlayerSalaries(playerEco.getPlayerUUID());
-            if (list.isEmpty()) return;
-            list.forEach(playerSalary -> {
-                playerSalary.setStatus(SalaryStatus.REDEEMED);
-                playerSalary.flush();
-                BankOperation bankOperation = new BankOperation(
-                        playerSalary.getEmitterUUID(),
-                        playerSalary.getReceiverUUID(),
-                        playerSalary.getAmount(),
-                        BankOperationType.SALARY
-                );
-                bankOperation.flush();
-            });
-
-            int total = list.stream()
-                    .map(PlayerSalary::getAmount)
-                    .reduce(0, Integer::sum);
-            playerEco.addBankMoney(total);
-
-            //Back in the main thread
-            plugin.getServer().getScheduler().runTask(plugin, bukkitTask1 -> {
-                adventure.player(player).sendMessage(
-                        PluginComponentProvider.getPluginHeader()
-                                .append(mm.deserialize(String.format(
-                                        "<color:#bfbfbf>%,d salaire(s) trouvé(s) ! Un virement de %,d ryos a été fait vers votre compte.",
-                                        list.size(),
-                                        total
-                                )))
-                );
-            });
-        });
     }
 
     /**
