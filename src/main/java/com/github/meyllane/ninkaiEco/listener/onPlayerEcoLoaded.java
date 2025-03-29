@@ -2,6 +2,7 @@ package com.github.meyllane.ninkaiEco.listener;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
 import com.github.meyllane.ninkaiEco.dataclass.BankOperation;
+import com.github.meyllane.ninkaiEco.dataclass.Notification;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
 import com.github.meyllane.ninkaiEco.enums.BankOperationType;
@@ -23,7 +24,10 @@ public class onPlayerEcoLoaded implements Listener {
 
     @EventHandler()
     public void onEcoLoaded(PlayerEcoLoadedEvent event) {
-        this.handlePlayerSalary(event.getPlayer(), event.getPlayerEco());
+        Player player = event.getPlayer();
+        this.handlePlayerSalary(player, event.getPlayerEco());
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> this.handlePlayerNotifications(player));
     }
 
     public void handlePlayerSalary(Player player, PlayerEco playerEco) {
@@ -58,6 +62,18 @@ public class onPlayerEcoLoaded implements Listener {
                                 )))
                 );
             });
+        });
+    }
+
+    /**
+     * Handles Notifications retrieval and processing. Has to be executed asynchronously.
+     * @param player
+     */
+    public void handlePlayerNotifications(Player player) {
+        ArrayList<Notification> notifs = Notification.getNotifications(player.getUniqueId().toString());
+        notifs.forEach(notif -> {
+            plugin.getServer().getScheduler().runTask(plugin, notif::send);
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, notif::delete);
         });
     }
 }
