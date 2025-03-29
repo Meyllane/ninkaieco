@@ -8,7 +8,9 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -17,7 +19,7 @@ public class Notification {
     private final Integer amount;
     private final String playerUUID;
     private final String message;
-    private final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
+    private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
     private final BukkitAudiences adventure = plugin.adventure();
     private final MiniMessage mm = MiniMessage.miniMessage();
 
@@ -81,5 +83,34 @@ public class Notification {
                 PluginComponentProvider.getPluginHeader()
                         .append(mm.deserialize(this.message))
         );
+    }
+
+    public static ArrayList<Notification> getNotifications(String playerUUID) {
+        ArrayList<Notification> notifs = new ArrayList<>();
+        try {
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    "SELECT * FROM Notification WHERE playerUUID=?"
+            );
+            pst.setString(1, playerUUID);
+            ResultSet res = pst.executeQuery();
+            while (res.next()) {
+                notifs.add(
+                        new Notification(
+                                res.getInt("ID"),
+                                res.getInt("amount"),
+                                res.getString("playerUUID"),
+                                res.getString("message")
+                                )
+                );
+            }
+            pst.close();
+            return notifs;
+        } catch (SQLException e) {
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Error while fetching Notifications: " + e.getMessage()
+            );
+        }
+        return notifs;
     }
 }
