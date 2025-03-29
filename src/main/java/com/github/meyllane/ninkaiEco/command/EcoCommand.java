@@ -2,10 +2,7 @@ package com.github.meyllane.ninkaiEco.command;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
 
-import com.github.meyllane.ninkaiEco.dataclass.BankOperation;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerCash;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
+import com.github.meyllane.ninkaiEco.dataclass.*;
 import com.github.meyllane.ninkaiEco.enums.*;
 import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import com.lishid.openinv.OpenInv;
@@ -434,14 +431,6 @@ public class EcoCommand {
             } else {
                 targetEco = PlayerEco.get(target.getUniqueId().toString());
             }
-
-            PlayerSalary salary = new PlayerSalary(
-                    player.getUniqueId().toString(),
-                    target.getUniqueId().toString(),
-                    targetEco.getMonthlySalary(),
-                    SalaryStatus.PENDING
-            );
-
             scheduler.runTask(plugin, bukkitTask1 -> {
                 if (sendPlayerNotification) {
                     Component playerMessage = PluginComponentProvider.getPluginHeader()
@@ -452,30 +441,20 @@ public class EcoCommand {
                     adventure.player(player).sendMessage(playerMessage);
                 }
 
-                boolean redeemed;
+                int salary = targetEco.getMonthlySalary();
+                targetEco.addBankMoney(salary);
+                String message = String.format("<color:#bfbfbf>Votre salaire est arrivé en avance ! %,d ryos ont été versés sur votre compte.", salary);
                 if (isConnected) {
                     Player t = plugin.getServer().getPlayer(target.getUniqueId());
                     Component targetMessage = PluginComponentProvider.getPluginHeader()
-                            .append(mm.deserialize(String.format("<color:#bfbfbf>Votre salaire est arrivé en avance ! %,d ryos ont été virés sur votre compte", salary.getAmount())));
+                            .append(mm.deserialize(message));
                     adventure.player(t).sendMessage(targetMessage);
-                    salary.setStatus(SalaryStatus.REDEEMED);
-                    targetEco.addBankMoney(salary.getAmount());
-                    redeemed = true;
-                } else {
-                    redeemed = false;
-                }
 
-                scheduler.runTaskAsynchronously(plugin, bukkitTask2 -> {
-                    salary.flush();
-                    if (redeemed) {
-                        new BankOperation(
-                                target.getUniqueId().toString(),
-                                target.getUniqueId().toString(),
-                                salary.getAmount(),
-                                BankOperationType.SALARY
-                        ).flush();
-                    }
-                });
+                } else {
+                    Notification notif = new Notification(targetEco.getMonthlySalary(), targetEco.getPlayerUUID(), message);
+                    scheduler.runTaskAsynchronously(plugin, notif::flush);
+                    scheduler.runTaskAsynchronously(plugin, targetEco::flush);
+                }
             });
         });
     }
