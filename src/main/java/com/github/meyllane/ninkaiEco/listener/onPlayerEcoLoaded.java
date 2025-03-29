@@ -1,14 +1,8 @@
 package com.github.meyllane.ninkaiEco.listener;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
-import com.github.meyllane.ninkaiEco.dataclass.BankOperation;
 import com.github.meyllane.ninkaiEco.dataclass.Notification;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
-import com.github.meyllane.ninkaiEco.enums.BankOperationType;
-import com.github.meyllane.ninkaiEco.enums.SalaryStatus;
 import com.github.meyllane.ninkaiEco.events.PlayerEcoLoadedEvent;
-import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
