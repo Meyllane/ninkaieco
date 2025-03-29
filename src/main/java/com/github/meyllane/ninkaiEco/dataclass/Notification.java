@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -43,12 +44,16 @@ public class Notification {
                     """
                             INSERT INTO Notification(playerUUID, amount, message)
                             VALUES (?, ?, ?)
-                            """
+                            """,
+                    Statement.RETURN_GENERATED_KEYS
             );
             pst.setString(1, this.playerUUID);
             pst.setInt(2, this.amount);
             pst.setString(3, this.message);
             pst.execute();
+            ResultSet res = pst.getGeneratedKeys();
+            res.next();
+            this.id = res.getInt(1);
             pst.close();
         } catch (SQLException e) {
             plugin.getLogger().log(

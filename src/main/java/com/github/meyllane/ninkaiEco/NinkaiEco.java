@@ -3,10 +3,7 @@ package com.github.meyllane.ninkaiEco;
 import com.github.meyllane.ninkaiEco.command.ArtisanCommand;
 import com.github.meyllane.ninkaiEco.command.EcoCommand;
 import com.github.meyllane.ninkaiEco.command.InstitCommand;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
-import com.github.meyllane.ninkaiEco.dataclass.SalaryTimer;
-import com.github.meyllane.ninkaiEco.dataclass.SellOrder;
+import com.github.meyllane.ninkaiEco.dataclass.*;
 import com.github.meyllane.ninkaiEco.enums.SalaryStatus;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
 import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
@@ -106,12 +103,11 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
 
         playerEcoList.forEach(playerEco -> this.getServer().getScheduler().runTaskAsynchronously(this, bukkitTask -> {
             if (playerEco.getMonthlySalary() == 0) return;
-            PlayerSalary salary = new PlayerSalary(
-                    "Server",
-                    playerEco.getPlayerUUID(),
-                    playerEco.getMonthlySalary(),
-                    SalaryStatus.PENDING);
-            salary.flush();
+            int salary = playerEco.getMonthlySalary();
+            playerEco.addBankMoney(salary);
+            playerEco.flush();
+            String message = String.format("<color:#bfbfbf>Votre salaire est arrivé ! %,d ryos ont été versés sur votre compte.", salary);
+            new Notification(salary, playerEco.getPlayerUUID(), message).flush();
         }));
 
         SalaryTimer.setLastSalaryDate(new Date());
