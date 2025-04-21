@@ -30,6 +30,8 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
     private boolean salaryStart;
     private FileConfiguration config;
 
+    public static HashMap<String, Plot> allPlots = new HashMap<>();
+
     @Override
     public void onEnable() {
         this.adventure = BukkitAudiences.create(this);
@@ -41,6 +43,8 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         InstitCommand.register();
         ArtisanCommand.register();
         PlotCommand.register();
+
+        allPlots = Plot.getAllPlots();
 
         //Save the config.yml file as in the resources if it does not exist already
         saveDefaultConfig();

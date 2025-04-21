@@ -11,30 +11,29 @@ import dev.jorel.commandapi.arguments.*;
 import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
 import dev.jorel.commandapi.executors.CommandArguments;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+import static com.github.meyllane.ninkaiEco.NinkaiEco.allPlots;
+
 public class PlotCommand {
     private static final HashMap<String, ArgumentSuggestions<CommandSender>> suggestionMap = new HashMap<>();
-    private static HashMap<String, Plot> allPlots = new HashMap<>();
+
     private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
     private static final BukkitScheduler scheduler = plugin.getServer().getScheduler();
     private static final BukkitAudiences adventure = plugin.adventure();
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
     public static void register() {
-        allPlots = Plot.getAllPlots(); //Get all Plots at commadn registration
+         //Get all Plots
 
         suggestionMap.put("allPlotNames", ArgumentSuggestions.stringsAsync(info ->
             CompletableFuture.supplyAsync(() -> {
