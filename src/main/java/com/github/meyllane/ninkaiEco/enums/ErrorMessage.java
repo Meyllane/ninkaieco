@@ -8,7 +8,12 @@ public enum ErrorMessage {
     ALREADY_PROCESS_SELL_ORDER("Cette commande a déjà été traité."),
     NOT_ENOUGHT_MONEY_FOR_SELL_ORDER("Vous n'avez pas assez d'argent pour accepter cette vente."),
     UNKNOWN_ERROR("Une erreur inattendue est survenue. Contactez l'équipe technique."),
-    NONE_EXISTING_OR_NEVER_SEEN_PLAYER("Lae joueur.euse n'existe pas ou ne s'est jamais connecté.e sur le serveur.");
+    NONE_EXISTING_OR_NEVER_SEEN_PLAYER("Lae joueur.euse n'existe pas ou ne s'est jamais connecté.e sur le serveur."),
+    NONE_EXISTING_PLOT("Le plot demandé n'existe pas."),
+    ALREADY_EXISTING_PLOT("Un plot portant ce nom existe déjà."),
+    PLOT_CANT_HAVE_PLAYER_OWNER("Ce plot ne peut pas être détenu par un.e joueur.euse"),
+    PLAYER_ALREADY_OWNS_THIS_PLOT("Lae joueur.euse possède déjà ce plot."),
+    PLAYER_NOT_PLOT_OWNER("Lae joueur.euse ne possède pas ce plot.");
 
     public final String message;
 

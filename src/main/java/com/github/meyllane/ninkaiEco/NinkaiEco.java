@@ -3,14 +3,15 @@ package com.github.meyllane.ninkaiEco;
 import com.github.meyllane.ninkaiEco.command.ArtisanCommand;
 import com.github.meyllane.ninkaiEco.command.EcoCommand;
 import com.github.meyllane.ninkaiEco.command.InstitCommand;
+import com.github.meyllane.ninkaiEco.command.PlotCommand;
 import com.github.meyllane.ninkaiEco.dataclass.*;
-import com.github.meyllane.ninkaiEco.enums.SalaryStatus;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
 import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
 import com.github.meyllane.ninkaiEco.listener.onPlayerJoin;
 import com.github.meyllane.ninkaiEco.listener.onPlayerQuit;
 import me.Seisan.plugin.Main;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,17 +20,15 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public final class NinkaiEco extends JavaPlugin implements Listener {
     public static HashMap<String, PlayerEco> playerEcoMap = new HashMap<>();
     private BukkitAudiences adventure;
     private boolean salaryStart;
     private FileConfiguration config;
-
 
     @Override
     public void onEnable() {
@@ -41,6 +40,7 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         EcoCommand.register();
         InstitCommand.register();
         ArtisanCommand.register();
+        PlotCommand.register();
 
         //Save the config.yml file as in the resources if it does not exist already
         saveDefaultConfig();
