@@ -13,7 +13,10 @@ public enum ErrorMessage {
     ALREADY_EXISTING_PLOT("Un plot portant ce nom existe déjà."),
     PLOT_CANT_HAVE_PLAYER_OWNER("Ce plot ne peut pas être détenu par un.e joueur.euse"),
     PLAYER_ALREADY_OWNS_THIS_PLOT("Lae joueur.euse possède déjà ce plot."),
-    PLAYER_NOT_PLOT_OWNER("Lae joueur.euse ne possède pas ce plot.");
+    PLAYER_NOT_PLOT_OWNER("Lae joueur.euse ne possède pas ce plot."),
+    FIRST_REMOVE_CURRENT_OWNERS("Le plot a encore des propriétaires."),
+    SAME_PLOT_STATUS("Le statut demandé est déjà celui du plot."),
+    PLOT_DOESNT_HAVE_HPA("Ce plot n'a pas de contrat de location-vente en cours.");
 
     public final String message;
 

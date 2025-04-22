@@ -27,6 +27,7 @@ public class Plot {
     private String createdBy;
     private String updatedBy;
     private ArrayList<String> ownersUUID;
+    private HPA hpa;
 
     private static NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
 
@@ -42,6 +43,7 @@ public class Plot {
         this.price = price;
         this.status = plotStatus;
         this.ownersUUID = new ArrayList<>();
+        this.hpa = null;
     }
 
     //From database
@@ -85,6 +87,10 @@ public class Plot {
         return price;
     }
 
+    public HPA getHpa() {
+        return hpa;
+    }
+
     public Date getCreatedAt() {
         return createdAt;
     }
@@ -106,6 +112,10 @@ public class Plot {
         this.fullName = this.createFullName();
     }
 
+    public void setHpa(HPA hpa) {
+        this.hpa = hpa;
+    }
+
     public void setPrice(Integer price) {
         this.price = price;
     }
@@ -120,6 +130,7 @@ public class Plot {
 
     public void flush() {
         this.flushPlotAttributs();
+        if (this.hpa != null) this.hpa.flush();
 
         ArrayList<String> dbOwners = this.getCurrentPlotOwners();
         if (dbOwners == null) return;
@@ -248,6 +259,7 @@ public class Plot {
                         res.getString("updatedBy")
                 );
                 plot.ownersUUID = fetchPlotOwners(plot.id);
+                plot.hpa = HPA.getOnGoingHPA(plot);
                 plots.put(res.getString("name"), plot);
             }
             pst.close();

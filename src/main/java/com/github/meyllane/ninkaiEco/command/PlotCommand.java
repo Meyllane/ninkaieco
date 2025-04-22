@@ -1,9 +1,12 @@
 package com.github.meyllane.ninkaiEco.command;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
+import com.github.meyllane.ninkaiEco.dataclass.HPA;
+import com.github.meyllane.ninkaiEco.dataclass.HPAContractor;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.Plot;
 import com.github.meyllane.ninkaiEco.enums.ErrorMessage;
+import com.github.meyllane.ninkaiEco.enums.HPAStatus;
 import com.github.meyllane.ninkaiEco.enums.PlotStatus;
 import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import dev.jorel.commandapi.CommandAPIBukkit;
@@ -35,10 +38,16 @@ public class PlotCommand {
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
     public static void register() {
-        suggestionMap.put("allPlotNames", ArgumentSuggestions.stringsAsync(info ->
-            CompletableFuture.supplyAsync(() -> {
-                return Objects.requireNonNull(allPlots).keySet().toArray(new String[0]);
-            })
+        suggestionMap.put("allPlotNames", ArgumentSuggestions.strings(info ->
+                Objects.requireNonNull(allPlots).keySet().toArray(String[]::new)
+        ));
+
+        //Plots that have an active HPA
+        suggestionMap.put("allPlotHPA", ArgumentSuggestions.strings(info ->
+                allPlots.values().stream()
+                        .filter(plot -> plot.getHpa() != null)
+                        .map(Plot::getName)
+                        .toArray(String[]::new)
         ));
 
         suggestionMap.put("plotStatus", ArgumentSuggestions.strings(info ->
@@ -117,6 +126,15 @@ public class PlotCommand {
                                                                 .withPermission("ninkaieco.plot.set.owner.remove")
                                                                 .executes(PlotCommand::removeOwner)
                                                 )
+                                )
+                )
+                .thenNested(
+                        new LiteralArgument("hpa"),
+                        new StringArgument("plot").replaceSuggestions(suggestionMap.get("allPlotHPA"))
+                                .thenNested(
+                                        new LiteralArgument("see")
+                                                .withPermission("ninkaieco.plot.hpa.see")
+                                                .executes(PlotCommand::seeHPA)
                                 )
                 )
                 .register();
@@ -243,6 +261,28 @@ public class PlotCommand {
 
         PlotStatus plotStatus = PlotStatus.getByName(statusName);
 
+        if (plotStatus == plot.getStatus()) {
+            throw CommandAPIBukkit.failWithAdventureComponent(
+                    PluginComponentProvider.getErrorComponent(ErrorMessage.SAME_PLOT_STATUS.message)
+            );
+        }
+
+        if (!plotStatus.canHavePlayerOwners && !plot.getOwnersUUID().isEmpty()) {
+            throw CommandAPIBukkit.failWithAdventureComponent(
+                    PluginComponentProvider.getErrorComponent(ErrorMessage.FIRST_REMOVE_CURRENT_OWNERS.message)
+            );
+        }
+
+        //Then we create a new HPA
+        if (plotStatus == PlotStatus.RENT && plot.getHpa() == null) {
+            plot.setHpa(new HPA(plot.getPrice(), player.getUniqueId().toString(), plot));
+        }
+
+        //If we change the status and the HPA is not complete, we cancel it
+        if (plotStatus != PlotStatus.RENT && plot.getHpa() != null && plot.getHpa().getStatus() != HPAStatus.COMPLETED) {
+            plot.getHpa().setStatus(HPAStatus.CANCELLED);
+        }
+
         plot.setStatus(plotStatus);
         plot.setUpdatedBy(player.getUniqueId().toString());
 
@@ -273,6 +313,12 @@ public class PlotCommand {
         }
 
         plot.getOwnersUUID().add(target.getUniqueId().toString());
+
+        //If status RENT then we need to create an HPAContractor
+        if (plot.getStatus() == PlotStatus.RENT) {
+            HPAContractor contractor = new HPAContractor(target.getUniqueId().toString(), plot.getHpa().getId());
+            plot.getHpa().addContractors(contractor);
+        }
 
         scheduler.runTaskAsynchronously(plugin, plot::flush);
 
@@ -342,5 +388,19 @@ public class PlotCommand {
                 adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(message));
             });
         });
+    }
+
+    private static void seeHPA(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
+        if (!(sender instanceof Player player)) return;
+
+        Plot plot = getPlot(args.getByClass("plot", String.class));
+
+        if (plot.getHpa() == null) {
+            throw CommandAPIBukkit.failWithAdventureComponent(
+                    PluginComponentProvider.getErrorComponent(ErrorMessage.PLOT_DOESNT_HAVE_HPA.message)
+            );
+        }
+
+
     }
 }
