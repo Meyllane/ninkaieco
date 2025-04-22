@@ -1,6 +1,7 @@
 package com.github.meyllane.ninkaiEco.command;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
+import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.Plot;
 import com.github.meyllane.ninkaiEco.enums.ErrorMessage;
 import com.github.meyllane.ninkaiEco.enums.PlotStatus;
@@ -11,6 +12,7 @@ import dev.jorel.commandapi.arguments.*;
 import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
 import dev.jorel.commandapi.executors.CommandArguments;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -33,8 +35,6 @@ public class PlotCommand {
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
     public static void register() {
-         //Get all Plots
-
         suggestionMap.put("allPlotNames", ArgumentSuggestions.stringsAsync(info ->
             CompletableFuture.supplyAsync(() -> {
                 return Objects.requireNonNull(allPlots).keySet().toArray(new String[0]);
@@ -67,6 +67,12 @@ public class PlotCommand {
                                 .replaceSuggestions(suggestionMap.get("allPlotNames"))
                                 .withPermission("ninkaieco.plot.see")
                                 .executes(PlotCommand::seePlot)
+                )
+                .thenNested(
+                        new LiteralArgument("checkplots"),
+                        new StringArgument("target").setOptional(true).replaceSuggestions(suggestionMap.get("offlinePlayers"))
+                                .withPermission("ninkaieco.plot.checkplots")
+                                .executes(PlotCommand::seeOwnedPlots)
                 )
                 .thenNested(
                         new LiteralArgument("create"),
@@ -130,18 +136,29 @@ public class PlotCommand {
         if (!(sender instanceof Player player)) return;
 
         Plot plot = getPlot(args.getByClass("plot", String.class));
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            String message = String.format("""
+        String message = String.format("""
                 <color:#bfbfbf>Information du plot %s
                 Nom: %s
                 Statut: %s
                 Prix: %,d ryos""", plot.getName(), plot.getFullName(), plot.getStatus().name, plot.getPrice());
 
-            adventure.player(player).sendMessage(
-                    PluginComponentProvider.getPluginHeader()
-                            .append(mm.deserialize(message))
-            );
-        });
+        Component toSend = PluginComponentProvider.getPluginHeader()
+                .append(mm.deserialize(message));
+
+        if (!plot.getOwnersUUID().isEmpty()) {
+            toSend = toSend.appendNewline();
+            toSend = toSend.append(mm.deserialize("<color:#bfbfbf>Propriétaire(s): "));
+            String[] owners = Arrays.stream(plugin.getServer().getOfflinePlayers())
+                    .filter(off -> plot.getOwnersUUID().contains(off.getUniqueId().toString()))
+                    .map(OfflinePlayer::getName).filter(Objects::nonNull).toArray(String[]::new);
+            for (String name : owners) {
+                toSend = toSend.appendNewline().append(mm.deserialize(
+                        String.format("<color:#bfbfbf>- %s", name)
+                ));
+            }
+        }
+
+        adventure.player(player).sendMessage(toSend);
     }
 
     private static void createPlot(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
@@ -285,5 +302,45 @@ public class PlotCommand {
                 PluginComponentProvider.getPluginHeader()
                         .append(mm.deserialize("<color:#bfbfbf>Lae joueur.euse a bien été retiré.e du plot !"))
         );
+    }
+
+    private static void seeOwnedPlots(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
+        if (!(sender instanceof Player player)) return;
+
+        String targetName = args.getByClass("target", String.class);
+        OfflinePlayer target;
+        if (targetName == null) {
+            target = player;
+        } else {
+           target = Arrays.stream(plugin.getServer().getOfflinePlayers())
+                   .filter(off -> Objects.equals(off.getName(), targetName))
+                   .findFirst()
+                   .orElse(null);
+        }
+
+        if (target == null) {
+            throw CommandAPIBukkit.failWithAdventureComponent(
+                    PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_OR_NEVER_SEEN_PLAYER.message)
+            );
+        }
+
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            PlayerEco playerEco = PlayerEco.get(target.getUniqueId().toString());
+            scheduler.runTask(plugin, () -> {
+                Component message = mm.deserialize(String.format(
+                        "<color:#bfbfbf>Propriétés de %s:", target.getName()
+                ));
+
+                for (Plot plot : playerEco.getPlotOwned()) {
+                    message = message.appendNewline().append(
+                            mm.deserialize(String.format(
+                                    "<color:#bfbfbf>- %s (%s)", plot.getFullName(), plot.getStatus().name
+                            ))
+                    );
+                }
+
+                adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(message));
+            });
+        });
     }
 }

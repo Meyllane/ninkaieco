@@ -21,6 +21,7 @@ public class PlayerEco {
     private final RPRank rank;
     private final PlayerInstitution institution;
     private final RPRankSalary rpRankSalary;
+    private ArrayList<Plot> plotOwned;
 
     public PlayerEco(int id, String playerUUID, int bankMoney, RPRank rank, PlayerInstitution institution, RPRankSalary rpRankSalary) {
         this.id = id;
@@ -68,6 +69,10 @@ public class PlayerEco {
         this.bankMoney -= amount;
     }
 
+    public ArrayList<Plot> getPlotOwned() {
+        return plotOwned;
+    }
+
     public PlayerInstitution getPlayerInstitution() {
         return institution;
     }
@@ -109,6 +114,7 @@ public class PlayerEco {
                     PlayerInstitution.get(playerUUID),
                     RPRankSalary.getByRPRank(rank)
             );
+            pEco.plotOwned = getPlotOwned(playerUUID);
             pst.close();
             return pEco;
         } catch (SQLException e) {
@@ -207,5 +213,31 @@ public class PlayerEco {
                     "Error when updating PlayerEco : " + e.getMessage()
             );
         }
+    }
+
+    private static ArrayList<Plot> getPlotOwned(String playerUUID) {
+        ArrayList<Plot> plots = new ArrayList<>();
+        try {
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    """
+                            SELECT DISTINCT Plot.name FROM Plot
+                            INNER JOIN PlotOwner ON Plot.ID = PlotOwner.plotID
+                            WHERE PlotOwner.playerUUID = ?
+                            """
+            );
+            pst.setString(1, playerUUID);
+            ResultSet res = pst.executeQuery();
+            while (res.next()) {
+                plots.add(NinkaiEco.allPlots.get(res.getString("Plot.name")));
+            }
+            pst.close();
+            return plots;
+        } catch (SQLException e) {
+            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
+                    Level.SEVERE,
+                    "Error when fetching PlayerEco's plotOwned: " + e.getMessage()
+            );
+        }
+        return null;
     }
 }
