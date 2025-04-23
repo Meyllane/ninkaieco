@@ -31,6 +31,7 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
     private FileConfiguration config;
 
     public static HashMap<String, Plot> allPlots = new HashMap<>();
+    public static HashMap<String, PlayerEco> playerEcos = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -45,6 +46,7 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         PlotCommand.register();
 
         allPlots = Plot.getAllPlots();
+        playerEcos = PlayerEco.getAllPlayerEco();
 
         //Save the config.yml file as in the resources if it does not exist already
         saveDefaultConfig();

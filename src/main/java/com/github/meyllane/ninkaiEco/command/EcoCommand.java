@@ -104,19 +104,15 @@ public class EcoCommand {
     private static void seeBalance(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player player)) return;
 
-        boolean targetIsConnected;
         Player target;
         OfflinePlayer offTarget = args.getByClassOrDefault("target", OfflinePlayer.class, player);
         if (offTarget.getUniqueId().toString().equals(player.getUniqueId().toString())) {
-            targetIsConnected = true;
             target = player;
         } else {
             if (offTarget.isConnected()) {
-                targetIsConnected = true;
                 target = offTarget.getPlayer();
             } else {
                 target = OpenInv.getPlugin(OpenInv.class).loadPlayer(offTarget);
-                targetIsConnected = false;
             }
 
         }
@@ -125,35 +121,26 @@ public class EcoCommand {
                 PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_OR_NEVER_SEEN_PLAYER.message)
         );
 
-        scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
-            int bankMoney;
-            if (targetIsConnected) {
-                bankMoney = NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()).getBankMoney();
-            } else {
-                PlayerEco targetEco = PlayerEco.get(target.getUniqueId().toString());
-                bankMoney = targetEco.getBankMoney();
-            }
-            scheduler.runTask(plugin, bukkitTask1 -> {
-                Component toSend;
-                //Format the message based on if there is a target or not
-                if (target == player) {
-                    String message = String.format("<color:#bfbfbf>Vous avez %,d ryos sur votre compte et %,d ryos en cash.",
-                            bankMoney, EcoCommand.getCashValue(target));
-                    toSend = mm.deserialize(message);
-                } else {
-                    Component targetName = target.displayName();
-                    String message = String.format(" <color:#bfbfbf>a %,d ryos sur son compte et %,d ryos en cash.",
-                            bankMoney, EcoCommand.getCashValue(target));
-                    toSend = targetName.append(mm.deserialize(message));
-                }
+        PlayerEco eco = NinkaiEco.playerEcoMap.get(target.getUniqueId().toString());
 
-                //Send the message to the sender after adding the PluginHeader
-                adventure.player(player).sendMessage(
-                        PluginComponentProvider.getPluginHeader()
-                                .append(toSend)
-                );
-            });
-        });
+        Component toSend;
+        //Format the message based on if there is a target or not
+        if (target == player) {
+            String message = String.format("<color:#bfbfbf>Vous avez %,d ryos sur votre compte et %,d ryos en cash.",
+                    eco.getBankMoney(), EcoCommand.getCashValue(target));
+            toSend = mm.deserialize(message);
+        } else {
+            Component targetName = target.displayName();
+            String message = String.format(" <color:#bfbfbf>a %,d ryos sur son compte et %,d ryos en cash.",
+                    eco.getBankMoney(), EcoCommand.getCashValue(target));
+            toSend = targetName.append(mm.deserialize(message));
+        }
+
+        //Send the message to the sender after adding the PluginHeader
+        adventure.player(player).sendMessage(
+                PluginComponentProvider.getPluginHeader()
+                        .append(toSend)
+        );
     }
 
     private static void addBalance(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
