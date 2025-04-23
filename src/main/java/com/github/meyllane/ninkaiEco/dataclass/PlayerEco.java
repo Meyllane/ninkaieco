@@ -11,10 +11,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 
 public class PlayerEco {
+    private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
+
     private int id;
     private final String playerUUID;
     private int bankMoney;
@@ -239,5 +243,36 @@ public class PlayerEco {
             );
         }
         return null;
+    }
+
+    public static HashMap<String, PlayerEco> getAllPlayerEco() {
+        HashMap<String, PlayerEco> playerEcoHashMap = new HashMap<>();
+        try {
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    "SELECT * FROM Money"
+            );
+            ResultSet res = pst.executeQuery();
+            while (res.next()) {
+                RPRank rank = PlayerEco.getRank(res.getString("playerUUID"));
+                PlayerEco playerEco = new PlayerEco(
+                        res.getInt("ID"),
+                        res.getString("playerUUID"),
+                        res.getInt("bankMoney"),
+                        rank,
+                        PlayerInstitution.get(res.getString("playerUUID")),
+                        RPRankSalary.getByRPRank(rank)
+                );
+                playerEco.plotOwned = PlayerEco.getPlotOwned(playerEco.getPlayerUUID());
+                playerEcoHashMap.put(playerEco.getPlayerUUID(), playerEco);
+            }
+            pst.close();
+            return playerEcoHashMap;
+        } catch (SQLException e) {
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Error while fetching all PlayerEcos: " + e.getMessage()
+            );
+        }
+        return playerEcoHashMap;
     }
 }
