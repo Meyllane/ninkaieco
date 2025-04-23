@@ -316,7 +316,7 @@ public class PlotCommand {
 
         //If status RENT then we need to create an HPAContractor
         if (plot.getStatus() == PlotStatus.RENT) {
-            HPAContractor contractor = new HPAContractor(target.getUniqueId().toString(), plot.getHpa().getId());
+            HPAContractor contractor = new HPAContractor(NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()), plot.getHpa().getId());
             plot.getHpa().addContractors(contractor);
         }
 

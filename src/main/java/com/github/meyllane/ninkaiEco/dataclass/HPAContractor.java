@@ -6,34 +6,51 @@ import me.Seisan.plugin.Main;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public class HPAContractor {
     public static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
 
     private Integer id;
-    private String playerUUID;
+    private PlayerEco playerEco;
     private float salary_prop;
     private int HPA_id;
     private Date createdAt;
     private Date updatedAt;
 
-    public HPAContractor(Integer id, String playerUUID, float salary_prop, int HPA_id, Date createdAt, Date updatedAt) {
+    public HPAContractor(Integer id, PlayerEco playerEco, float salary_prop, int HPA_id, Date createdAt, Date updatedAt) {
         this.id = id;
-        this.playerUUID = playerUUID;
+        this.playerEco = playerEco;
         this.salary_prop = salary_prop;
         this.HPA_id = HPA_id;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public HPAContractor(String playerUUID, int HPA_id) {
+    public HPAContractor(PlayerEco playerEco, int HPA_id) {
         this.id = null;
-        this.playerUUID = playerUUID;
+        this.playerEco = playerEco;
         this.salary_prop = 0.5f;
         this.HPA_id = HPA_id;
         this.createdAt = new Date();
         this.updatedAt = new Date();
+    }
+
+    public PlayerEco getPlayerEco() {
+        return playerEco;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof HPAContractor other)) return false;
+        return Objects.equals(this.id, other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(this.id);
     }
 
     public void flushUpsert() {
@@ -52,7 +69,7 @@ public class HPAContractor {
                     Statement.RETURN_GENERATED_KEYS
             );
             pst.setObject(1, this.id);
-            pst.setString(2, this.playerUUID);
+            pst.setString(2, this.playerEco.getPlayerUUID());
             pst.setInt(3, this.HPA_id);
             pst.setFloat(4, this.salary_prop);
             pst.setTimestamp(5, new Timestamp(this.createdAt.getTime()));
@@ -98,7 +115,7 @@ public class HPAContractor {
             while (res.next()) {
                 HPAContractor contractor = new HPAContractor(
                         res.getInt("ID"),
-                        res.getString("playerUUID"),
+                        NinkaiEco.playerEcos.get(res.getString("playerUUID")),
                         res.getFloat("salary_prop"),
                         res.getInt("hpaID"),
                         new Date(res.getTimestamp("createdAt").getTime()),
@@ -115,5 +132,10 @@ public class HPAContractor {
             );
         }
         return contractors;
+    }
+
+    public int getMonthlyPayment() {
+        float sum = (float) this.playerEco.getMonthlySalary() * this.salary_prop;
+        return Math.round(sum);
     }
 }
