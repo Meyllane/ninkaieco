@@ -120,7 +120,6 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
             new Notification(salary, playerEco.getPlayerUUID(), message).flush();
         });
 
-        //TODO: DECOMMENT
-        //SalaryTimer.setLastSalaryDate(new Date());
+        SalaryTimer.setLastSalaryDate(new Date());
     }
 }
