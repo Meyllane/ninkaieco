@@ -21,4 +21,11 @@ public enum InstitutionDivision {
         }
         return NONE;
     }
+
+    public static InstitutionDivision getByShortName(String shortName) {
+        for (InstitutionDivision div : values()) {
+            if (div.shortName.equals(shortName)) return div;
+        }
+        return NONE;
+    }
 }

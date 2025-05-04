@@ -16,7 +16,8 @@ public enum ErrorMessage {
     PLAYER_NOT_PLOT_OWNER("Lae joueur.euse ne possède pas ce plot."),
     FIRST_REMOVE_CURRENT_OWNERS("Le plot a encore des propriétaires."),
     SAME_PLOT_STATUS("Le statut demandé est déjà celui du plot."),
-    PLOT_DOESNT_HAVE_HPA("Ce plot n'a pas de contrat de location-vente en cours.");
+    PLOT_DOESNT_HAVE_HPA("Ce plot n'a pas de contrat de location-vente en cours."),
+    INCCORECT_DIVISION("La division demandée n'est pas une division de cette institution.");
 
     public final String message;
 

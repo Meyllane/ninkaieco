@@ -14,15 +14,15 @@ public class HPAContractor {
 
     private Integer id;
     private PlayerEco playerEco;
-    private float salary_prop;
+    private float salaryProp;
     private int HPA_id;
     private Date createdAt;
     private Date updatedAt;
 
-    public HPAContractor(Integer id, PlayerEco playerEco, float salary_prop, int HPA_id, Date createdAt, Date updatedAt) {
+    public HPAContractor(Integer id, PlayerEco playerEco, float salaryProp, int HPA_id, Date createdAt, Date updatedAt) {
         this.id = id;
         this.playerEco = playerEco;
-        this.salary_prop = salary_prop;
+        this.salaryProp = salaryProp;
         this.HPA_id = HPA_id;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -31,7 +31,7 @@ public class HPAContractor {
     public HPAContractor(PlayerEco playerEco, int HPA_id) {
         this.id = null;
         this.playerEco = playerEco;
-        this.salary_prop = 0.5f;
+        this.salaryProp = 0.5f;
         this.HPA_id = HPA_id;
         this.createdAt = new Date();
         this.updatedAt = new Date();
@@ -39,6 +39,14 @@ public class HPAContractor {
 
     public PlayerEco getPlayerEco() {
         return playerEco;
+    }
+
+    public float getSalaryProp() {
+        return salaryProp;
+    }
+
+    public void setSalaryProp(float salaryProp) {
+        this.salaryProp = salaryProp;
     }
 
     @Override
@@ -71,7 +79,7 @@ public class HPAContractor {
             pst.setObject(1, this.id);
             pst.setString(2, this.playerEco.getPlayerUUID());
             pst.setInt(3, this.HPA_id);
-            pst.setFloat(4, this.salary_prop);
+            pst.setFloat(4, this.salaryProp);
             pst.setTimestamp(5, new Timestamp(this.createdAt.getTime()));
             pst.setTimestamp(6, new Timestamp(this.updatedAt.getTime()));
             pst.execute();
@@ -135,7 +143,7 @@ public class HPAContractor {
     }
 
     public int getMonthlyPayment() {
-        float sum = (float) this.playerEco.getMonthlySalary() * this.salary_prop;
+        float sum = (float) this.playerEco.getMonthlySalary() * this.salaryProp;
         return Math.round(sum);
     }
 }

@@ -1,9 +1,6 @@
 package com.github.meyllane.ninkaiEco;
 
-import com.github.meyllane.ninkaiEco.command.ArtisanCommand;
-import com.github.meyllane.ninkaiEco.command.EcoCommand;
-import com.github.meyllane.ninkaiEco.command.InstitCommand;
-import com.github.meyllane.ninkaiEco.command.PlotCommand;
+import com.github.meyllane.ninkaiEco.command.*;
 import com.github.meyllane.ninkaiEco.dataclass.*;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
 import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
@@ -44,9 +41,10 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         InstitCommand.register();
         ArtisanCommand.register();
         PlotCommand.register();
+        HPACommand.register();
 
-        allPlots = Plot.getAllPlots();
         playerEcos = PlayerEco.getAllPlayerEco();
+        allPlots = Plot.getAllPlots();
 
         //Save the config.yml file as in the resources if it does not exist already
         saveDefaultConfig();

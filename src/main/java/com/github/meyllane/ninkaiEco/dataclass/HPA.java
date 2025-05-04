@@ -284,4 +284,9 @@ public class HPA {
         }
         this.flush();
     }
+
+    public boolean hasContractor(String playerUUID) {
+        return this.contractors.stream()
+                .anyMatch(contractor -> contractor.getPlayerEco().getPlayerUUID().equals(playerUUID));
+    }
 }
