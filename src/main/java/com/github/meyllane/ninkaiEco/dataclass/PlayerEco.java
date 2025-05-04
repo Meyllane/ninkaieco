@@ -4,7 +4,6 @@ import com.github.meyllane.ninkaiEco.NinkaiEco;
 import com.github.meyllane.ninkaiEco.enums.RPRankSalary;
 import me.Seisan.plugin.Features.objectnum.RPRank;
 import me.Seisan.plugin.Main;
-import org.checkerframework.checker.units.qual.N;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,7 +11,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -25,7 +23,6 @@ public class PlayerEco {
     private final RPRank rank;
     private final PlayerInstitution institution;
     private final RPRankSalary rpRankSalary;
-    private ArrayList<Plot> plotOwned;
 
     public PlayerEco(int id, String playerUUID, int bankMoney, RPRank rank, PlayerInstitution institution, RPRankSalary rpRankSalary) {
         this.id = id;
@@ -53,10 +50,6 @@ public class PlayerEco {
         return this.rpRankSalary.salary + this.institution.getRank().salary;
     }
 
-    public RPRank getRank() {
-        return rank;
-    }
-
     public int getBankMoney() {
         return bankMoney;
     }
@@ -73,16 +66,8 @@ public class PlayerEco {
         this.bankMoney -= amount;
     }
 
-    public ArrayList<Plot> getPlotOwned() {
-        return plotOwned;
-    }
-
     public PlayerInstitution getPlayerInstitution() {
         return institution;
-    }
-
-    public RPRankSalary getRpRankSalary() {
-        return rpRankSalary;
     }
 
     public void flush() {
@@ -118,7 +103,6 @@ public class PlayerEco {
                     PlayerInstitution.get(playerUUID),
                     RPRankSalary.getByRPRank(rank)
             );
-            pEco.plotOwned = getPlotOwned(playerUUID);
             pst.close();
             return pEco;
         } catch (SQLException e) {
@@ -262,7 +246,6 @@ public class PlayerEco {
                         PlayerInstitution.get(res.getString("playerUUID")),
                         RPRankSalary.getByRPRank(rank)
                 );
-                playerEco.plotOwned = PlayerEco.getPlotOwned(playerEco.getPlayerUUID());
                 playerEcoHashMap.put(playerEco.getPlayerUUID(), playerEco);
             }
             pst.close();

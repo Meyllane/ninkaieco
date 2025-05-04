@@ -7,6 +7,7 @@ import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.Plot;
 import com.github.meyllane.ninkaiEco.enums.ErrorMessage;
 import com.github.meyllane.ninkaiEco.enums.HPAStatus;
+import com.github.meyllane.ninkaiEco.enums.InstitutionDivision;
 import com.github.meyllane.ninkaiEco.enums.PlotStatus;
 import com.github.meyllane.ninkaiEco.utils.PluginComponentProvider;
 import dev.jorel.commandapi.CommandAPIBukkit;
@@ -38,17 +39,44 @@ public class PlotCommand {
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
     public static void register() {
-        suggestionMap.put("allPlotNames", ArgumentSuggestions.strings(info ->
-                Objects.requireNonNull(allPlots).keySet().toArray(String[]::new)
-        ));
+        suggestionMap.put("allPlotNames", ArgumentSuggestions.strings(info -> {
+            if(!(info.sender() instanceof Player player)) return new String[0];
+
+            if (isFromUrbanism(info.sender())) {
+                return Objects.requireNonNull(allPlots).keySet().toArray(String[]::new);
+            }
+
+            //Player trying to see their plots
+            return allPlots.values().stream()
+                    .filter(plot -> plot.getOwnersUUID()
+                            .stream()
+                            .anyMatch(uuid -> uuid.equals(player.getUniqueId().toString()))
+                    )
+                    .map(Plot::getName)
+                    .toArray(String[]::new);
+        }));
 
         //Plots that have an active HPA
-        suggestionMap.put("allPlotHPA", ArgumentSuggestions.strings(info ->
-                allPlots.values().stream()
+        suggestionMap.put("allPlotHPA", ArgumentSuggestions.strings(info -> {
+            if (isFromUrbanism(info.sender())) {
+                return allPlots.values().stream()
                         .filter(plot -> plot.getHpa() != null)
                         .map(Plot::getName)
-                        .toArray(String[]::new)
-        ));
+                        .toArray(String[]::new);
+            }
+
+            if (!(info.sender() instanceof Player player)) return new String[0];
+
+            //Then, it might be a player wanting to check their own hpa
+            return allPlots.values().stream()
+                    .filter(plot -> plot.getHpa() != null)
+                    .filter(plot -> plot.getHpa().getContractors()
+                            .stream()
+                            .anyMatch(contractor -> contractor.getPlayerEco().getPlayerUUID().equals(player.getUniqueId().toString()))
+                    )
+                    .map(Plot::getName)
+                    .toArray(String[]::new);
+        }));
 
         suggestionMap.put("plotStatus", ArgumentSuggestions.strings(info ->
                 Arrays.stream(PlotStatus.values()).map(plot -> "'" + plot.name + "'").toArray(String[]::new)
@@ -90,6 +118,7 @@ public class PlotCommand {
                         new IntegerArgument("plotPrice")
                                 .withPermission("ninkaieco.plot.create")
                                 .executes(PlotCommand::createPlot)
+                                .withRequirement(PlotCommand::isFromUrbanism)
                 )
                 .thenNested(
                         new LiteralArgument("set"),
@@ -98,18 +127,21 @@ public class PlotCommand {
                                         new LiteralArgument("price"),
                                         new IntegerArgument("plotPrice")
                                                 .withPermission("ninkaieco.plot.set.price")
+                                                .withRequirement(PlotCommand::isFromUrbanism)
                                                 .executes(PlotCommand::setPrice)
                                 )
                                 .thenNested(
                                         new LiteralArgument("name"),
                                         new StringArgument("plotName")
                                                 .withPermission("ninkaieco.plot.set.name")
+                                                .withRequirement(PlotCommand::isFromUrbanism)
                                                 .executes(PlotCommand::setName)
                                 )
                                 .thenNested(
                                         new LiteralArgument("status"),
                                         new TextArgument("plotStatus").replaceSuggestions(suggestionMap.get("plotStatus"))
                                                 .withPermission("ninkaieco.plot.set.status")
+                                                .withRequirement(PlotCommand::isFromUrbanism)
                                                 .executes(PlotCommand::setStatus)
                                 )
                                 .thenNested(
@@ -118,29 +150,31 @@ public class PlotCommand {
                                                         new LiteralArgument("add"),
                                                         new StringArgument("target").replaceSuggestions(suggestionMap.get("offlinePlayers"))
                                                                 .withPermission("ninkaieco.plot.set.owner.add")
+                                                                .withRequirement(PlotCommand::isFromUrbanism)
                                                                 .executes(PlotCommand::addOwner)
                                                 )
                                                 .thenNested(
                                                         new LiteralArgument("remove"),
                                                         new StringArgument("target").replaceSuggestions(suggestionMap.get("plotOwners"))
                                                                 .withPermission("ninkaieco.plot.set.owner.remove")
+                                                                .withRequirement(PlotCommand::isFromUrbanism)
                                                                 .executes(PlotCommand::removeOwner)
                                                 )
-                                )
-                )
-                .thenNested(
-                        new LiteralArgument("hpa"),
-                        new StringArgument("plot").replaceSuggestions(suggestionMap.get("allPlotHPA"))
-                                .thenNested(
-                                        new LiteralArgument("see")
-                                                .withPermission("ninkaieco.plot.hpa.see")
-                                                .executes(PlotCommand::seeHPA)
                                 )
                 )
                 .register();
     }
 
-    private static Plot getPlot(String plotName) throws WrapperCommandSyntaxException {
+    private static boolean isFromUrbanism(CommandSender sender) {
+        if (!(sender instanceof Player player)) return false;
+        if (player.isOp()) return true;
+
+        PlayerEco playerEco = NinkaiEco.playerEcos.get(player.getUniqueId().toString());
+
+        return playerEco.getPlayerInstitution().getDivision() == InstitutionDivision.TOWN_PLANNING;
+    }
+
+    static Plot getPlot(String plotName) throws WrapperCommandSyntaxException {
         if (!allPlots.containsKey(plotName)) {
             throw CommandAPIBukkit.failWithAdventureComponent(
                     PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_PLOT.message)
@@ -166,13 +200,31 @@ public class PlotCommand {
         if (!plot.getOwnersUUID().isEmpty()) {
             toSend = toSend.appendNewline();
             toSend = toSend.append(mm.deserialize("<color:#bfbfbf>Propriétaire(s): "));
-            String[] owners = Arrays.stream(plugin.getServer().getOfflinePlayers())
+            OfflinePlayer[] owners = Arrays.stream(plugin.getServer().getOfflinePlayers())
                     .filter(off -> plot.getOwnersUUID().contains(off.getUniqueId().toString()))
-                    .map(OfflinePlayer::getName).filter(Objects::nonNull).toArray(String[]::new);
-            for (String name : owners) {
-                toSend = toSend.appendNewline().append(mm.deserialize(
-                        String.format("<color:#bfbfbf>- %s", name)
-                ));
+                    .toArray(OfflinePlayer[]::new);
+            for (OfflinePlayer owner : owners) {
+                String text;
+                if (plot.getHpa() != null) {
+                    HPAContractor contractor = plot.getHpa().getContractors()
+                            .stream()
+                            .filter(c -> c.getPlayerEco().getPlayerUUID().equals(owner.getUniqueId().toString()))
+                            .findFirst()
+                            .orElseThrow();
+
+                    text = String.format("<color:#bfbfbf>- %s (%,d ryos)", owner.getName(), contractor.getMonthlyPayment());
+                } else {
+                    text = String.format("<color:#bfbfbf>- %s", owner.getName());
+                }
+
+                toSend = toSend.appendNewline().append(mm.deserialize(text));
+            }
+
+            if (plot.getHpa() != null) {
+                toSend = toSend.appendNewline().append(mm.deserialize(String.format(
+                        "<color:#bfbfbf>Complété dans : %,d cycle(s)",
+                        (int) Math.ceil((double) plot.getHpa().getRemainingPrice() /plot.getHpa().getTotalMonthlyPayment())
+                )));
             }
         }
 
@@ -316,7 +368,7 @@ public class PlotCommand {
 
         //If status RENT then we need to create an HPAContractor
         if (plot.getStatus() == PlotStatus.RENT) {
-            HPAContractor contractor = new HPAContractor(target.getUniqueId().toString(), plot.getHpa().getId());
+            HPAContractor contractor = new HPAContractor(NinkaiEco.playerEcoMap.get(target.getUniqueId().toString()), plot.getHpa().getId());
             plot.getHpa().addContractors(contractor);
         }
 
@@ -377,7 +429,11 @@ public class PlotCommand {
                         "<color:#bfbfbf>Propriétés de %s:", target.getName()
                 ));
 
-                for (Plot plot : playerEco.getPlotOwned()) {
+                Plot[] playersPlot = allPlots.values().stream()
+                        .filter(plot -> plot.getOwnersUUID().contains(player.getUniqueId().toString()))
+                        .toArray(Plot[]::new);
+
+                for (Plot plot : playersPlot) {
                     message = message.appendNewline().append(
                             mm.deserialize(String.format(
                                     "<color:#bfbfbf>- %s (%s)", plot.getFullName(), plot.getStatus().name
@@ -388,19 +444,5 @@ public class PlotCommand {
                 adventure.player(player).sendMessage(PluginComponentProvider.getPluginHeader().append(message));
             });
         });
-    }
-
-    private static void seeHPA(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
-        if (!(sender instanceof Player player)) return;
-
-        Plot plot = getPlot(args.getByClass("plot", String.class));
-
-        if (plot.getHpa() == null) {
-            throw CommandAPIBukkit.failWithAdventureComponent(
-                    PluginComponentProvider.getErrorComponent(ErrorMessage.PLOT_DOESNT_HAVE_HPA.message)
-            );
-        }
-
-
     }
 }

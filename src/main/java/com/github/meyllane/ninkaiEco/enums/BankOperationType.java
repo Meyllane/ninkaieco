@@ -29,7 +29,8 @@ public enum BankOperationType {
     SALARY(5, "salary"),
     ADD(6, "add"),
     REMOVE(7, "remove"),
-    SET(8, "set");
+    SET(8, "set"),
+    HPA(9, "hpa");
 
     /**
      * The unique identifier for the bank operation type.

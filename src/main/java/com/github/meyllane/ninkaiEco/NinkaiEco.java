@@ -1,9 +1,6 @@
 package com.github.meyllane.ninkaiEco;
 
-import com.github.meyllane.ninkaiEco.command.ArtisanCommand;
-import com.github.meyllane.ninkaiEco.command.EcoCommand;
-import com.github.meyllane.ninkaiEco.command.InstitCommand;
-import com.github.meyllane.ninkaiEco.command.PlotCommand;
+import com.github.meyllane.ninkaiEco.command.*;
 import com.github.meyllane.ninkaiEco.dataclass.*;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
 import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
@@ -44,9 +41,10 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         InstitCommand.register();
         ArtisanCommand.register();
         PlotCommand.register();
+        HPACommand.register();
 
-        allPlots = Plot.getAllPlots();
         playerEcos = PlayerEco.getAllPlayerEco();
+        allPlots = Plot.getAllPlots();
 
         //Save the config.yml file as in the resources if it does not exist already
         saveDefaultConfig();
@@ -58,7 +56,11 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
 
         if (!SalaryTimer.isLastSalaryDateSet()) SalaryTimer.insertLastSalaryDate();
 
-        if (this.salaryStart && SalaryTimer.isTimeForSalary()) this.handlePlayerSalaries();
+        if (this.salaryStart && SalaryTimer.isTimeForSalary()) {
+            this.handlePlayerSalaries();
+            ArrayList<HPA> hpas = HPA.getAllOnGoingHPA();
+            hpas.forEach(HPA::handlePayment);
+        }
     }
 
     @Override
@@ -107,14 +109,14 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         List<PlayerEco> playerEcoList = PlayerEco.getAll();
         if (playerEcoList == null) return;
 
-        playerEcoList.forEach(playerEco -> this.getServer().getScheduler().runTaskAsynchronously(this, bukkitTask -> {
+        playerEcoList.forEach(playerEco -> {
             if (playerEco.getMonthlySalary() == 0) return;
             int salary = playerEco.getMonthlySalary();
             playerEco.addBankMoney(salary);
             playerEco.flush();
             String message = String.format("<color:#bfbfbf>Votre salaire est arrivé ! %,d ryos ont été versés sur votre compte.", salary);
             new Notification(salary, playerEco.getPlayerUUID(), message).flush();
-        }));
+        });
 
         SalaryTimer.setLastSalaryDate(new Date());
     }
