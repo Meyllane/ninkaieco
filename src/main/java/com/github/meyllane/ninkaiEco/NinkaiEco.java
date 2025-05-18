@@ -3,12 +3,10 @@ package com.github.meyllane.ninkaiEco;
 import com.github.meyllane.ninkaiEco.command.*;
 import com.github.meyllane.ninkaiEco.dataclass.*;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
-import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
 import com.github.meyllane.ninkaiEco.listener.onPlayerJoin;
 import com.github.meyllane.ninkaiEco.listener.onPlayerQuit;
 import me.Seisan.plugin.Main;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,10 +17,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 public final class NinkaiEco extends JavaPlugin implements Listener {
-    public static HashMap<String, PlayerEco> playerEcoMap = new HashMap<>();
     private BukkitAudiences adventure;
     private boolean salaryStart;
     private FileConfiguration config;
@@ -35,7 +31,6 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         this.adventure = BukkitAudiences.create(this);
         this.getServer().getPluginManager().registerEvents(new onPlayerJoin(), this);
         this.getServer().getPluginManager().registerEvents(new onPlayerQuit(), this);
-        this.getServer().getPluginManager().registerEvents(new onPlayerEcoLoaded(), this);
 
         EcoCommand.register();
         InstitCommand.register();

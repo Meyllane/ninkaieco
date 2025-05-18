@@ -1,6 +1,7 @@
 package com.github.meyllane.ninkaiEco.listener;
 
 import com.github.meyllane.ninkaiEco.NinkaiEco;
+import com.github.meyllane.ninkaiEco.dataclass.Notification;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
 import com.github.meyllane.ninkaiEco.dataclass.PlayerInstitution;
 import com.github.meyllane.ninkaiEco.enums.Institution;
@@ -21,6 +22,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.logging.Level;
 
@@ -31,34 +33,19 @@ public class onPlayerJoin implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) throws SQLException {
         Player player = event.getPlayer();
-        String playerUUID = player.getUniqueId().toString();
 
-        PlayerEco playerEco = PlayerEco.get(playerUUID);
-
-        NinkaiEco.playerEcoMap.put(playerUUID, playerEco);
-        CommandAPI.updateRequirements(player);
-
-        new PlayerEcoLoadedEvent(event.getPlayer(), playerEco).callEvent();
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> this.handlePlayerNotifications(player));
     }
 
-    private RPRank getRPRank(String playerUUID) {
-        try {
-            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
-                    "SELECT rang FROM PlayerInfo WHERE uuid = ?"
-            );
-            pst.setString(1, playerUUID);
-            ResultSet res = pst.executeQuery();
-            if (!res.next()) return RPRank.STUDENT;
-
-            RPRank rank = RPRank.getById(res.getInt("rang"));
-            pst.close();
-            return rank;
-        } catch (SQLException e) {
-            this.plugin.getLogger().log(
-                    Level.SEVERE,
-                    "Error when fetching the PlayerRank: " + e.getMessage()
-            );
-        }
-        return RPRank.STUDENT;
+    /**
+     * Handles Notifications retrieval and processing. Has to be executed asynchronously.
+     * @param player
+     */
+    public void handlePlayerNotifications(Player player) {
+        ArrayList<Notification> notifs = Notification.getNotifications(player.getUniqueId().toString());
+        notifs.forEach(notif -> {
+            plugin.getServer().getScheduler().runTask(plugin, notif::send);
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, notif::delete);
+        });
     }
 }
