@@ -62,7 +62,7 @@ public class InstitCommand {
                     List<String> res = new ArrayList<>();
                     res.add("none");
 
-                    Player target = info.previousArgs().getByClass("target", Player.class);
+                    OfflinePlayer target = plugin.getServer().getOfflinePlayerIfCached(info.previousArgs().getByClass("target", String.class));
                     if (target == null) return res.toArray(new String[0]);
 
                     PlayerEco targetEco = NinkaiEco.playerEcos.get(target.getUniqueId().toString());
@@ -76,10 +76,17 @@ public class InstitCommand {
                     return res.toArray(new String[0]);
                 })));
 
+        suggestions.put("offlinePlayers",
+                new StringArgument("target").replaceSuggestions(ArgumentSuggestions.strings(
+                    Arrays.stream(plugin.getServer().getOfflinePlayers())
+                            .map(OfflinePlayer::getName)
+                            .toArray(String[]::new)
+                )));
+
         new CommandTree("instit")
                 .withPermission("ninkaieco.instit.self.see")
                 .executes(InstitCommand::seeInstit)
-                .then(new PlayerArgument("target")
+                .then(suggestions.get("offlinePlayers")
                         .then(new LiteralArgument("set")
                                 .thenNested(
                                         new LiteralArgument("instit"),
@@ -104,7 +111,11 @@ public class InstitCommand {
     private static void seeInstit(CommandSender sender, CommandArguments args) {
         if (!(sender instanceof Player player)) return;
 
-        OfflinePlayer target = args.getByClassOrDefault("target", OfflinePlayer.class, player);
+        String targetName = args.getByClass("target", String.class);
+        if (targetName == null) {
+            targetName = player.getName();
+        }
+        OfflinePlayer target = plugin.getServer().getOfflinePlayerIfCached(targetName);
 
         Component message;
         if (player.getUniqueId().equals(target.getUniqueId())) {
@@ -139,7 +150,7 @@ public class InstitCommand {
     private static void setPlayerInstitution(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player player)) return;
 
-        OfflinePlayer target = args.getByClass("target", OfflinePlayer.class);
+        OfflinePlayer target = plugin.getServer().getOfflinePlayerIfCached(args.getByClass("target", String.class));
         Institution instit = Institution.getByShortName(args.getByClass("institShortName", String.class));
         InstitutionRank rank = InstitutionRank.getByShortName(args.getByClass("institRankShortName", String.class));
 
@@ -212,7 +223,7 @@ public class InstitCommand {
         if (!(sender instanceof Player player)) return;
 
         String divisionName = args.getByClass("subDivision", String.class);
-        Player target = args.getByClass("target", Player.class);
+        OfflinePlayer target = plugin.getServer().getOfflinePlayerIfCached(args.getByClass("target", String.class));
         if (target == null) {
             throw CommandAPIBukkit.failWithAdventureComponent(
                     PluginComponentProvider.getErrorComponent(ErrorMessage.NONE_EXISTING_OR_NEVER_SEEN_PLAYER.message)

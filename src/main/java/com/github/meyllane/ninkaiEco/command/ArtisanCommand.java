@@ -24,28 +24,34 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
+import java.sql.Array;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 public class ArtisanCommand {
     private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
     private static final BukkitAudiences adventure = plugin.adventure();
     private static final MiniMessage mm = MiniMessage.miniMessage();
     private static final BukkitScheduler scheduler = plugin.getServer().getScheduler();
+    private static final HashMap<String, ArgumentSuggestions<CommandSender>> suggestionsMap = new HashMap<>();
 
     /**
      * Registers the /artisan command
      */
     public static void register() {
+
+        suggestionsMap.put("offlinePlayers", ArgumentSuggestions.strings(
+                Arrays.stream(plugin.getServer().getOfflinePlayers())
+                        .map(OfflinePlayer::getName)
+                        .toArray(String[]::new)
+        ));
+
         new CommandTree("artisan")
                 .then(
                         new LiteralArgument("sell")
                                 .withPermission("ninkaieco.artisan.sell")
-                                .withRequirement(ArtisanCommand::isMerchant)
                                 .thenNested(
-                                        new OfflinePlayerArgument("buyer"),
+                                        new StringArgument("buyer").replaceSuggestions(suggestionsMap.get("offlinePlayers")),
                                         new IntegerArgument("price"),
                                         new IntegerArgument("margin", 0, 20),
                                         new GreedyStringArgument("detail")
@@ -66,26 +72,12 @@ public class ArtisanCommand {
                 )
                 .then(
                         new LiteralArgument("cancel")
-                                .withRequirement(ArtisanCommand::isMerchant)
                                 .withPermission("ninkaieco.artisan.cancel")
                                 .then(new IntegerArgument("orderID")
                                         .executes(ArtisanCommand::cancelSellOrder)
                                 )
                 )
                 .register();
-    }
-
-    /** Checks if the player is a Merchant (in the Artisan Institution)
-     *
-     * @param sender A CommandSender. The command will only run if it's a subclass of <code>Player</code>
-     * @return true if the player is a Merchant, otherwise false
-     */
-    public static boolean isMerchant(CommandSender sender) {
-        if (!(sender instanceof Player player)) return false;
-
-        PlayerEco playerEco = NinkaiEco.playerEcoMap.get(player.getUniqueId().toString());
-        if (playerEco == null) return false;
-        return playerEco.getPlayerInstitution().getInstitution() == Institution.ARTI;
     }
 
     /**
@@ -98,7 +90,7 @@ public class ArtisanCommand {
     public static void createSellOrder(CommandSender sender, CommandArguments args) throws WrapperCommandSyntaxException {
         if (!(sender instanceof Player seller)) return;
 
-        OfflinePlayer buyer = args.getByClass("buyer", OfflinePlayer.class);
+        OfflinePlayer buyer = plugin.getServer().getOfflinePlayerIfCached(args.getByClass("buyer", String.class));
         String detail = args.getByClass("detail", String.class);
         int price = args.getByClass("price", Integer.class);
         int margin = args.getByClass("margin", Integer.class);
@@ -213,11 +205,11 @@ public class ArtisanCommand {
 
         if (sellOrder.getStatus() != SellOrderStatus.PENDING) throw new NinkaiEcoError(ErrorMessage.ALREADY_PROCESS_SELL_ORDER.message);
 
-        PlayerEco buyerEco = NinkaiEco.playerEcoMap.get(buyer.getUniqueId().toString());
+        PlayerEco buyerEco = NinkaiEco.playerEcos.get(buyer.getUniqueId().toString());
 
         if (buyerEco.getBankMoney() < sellOrder.getPrice()) throw new NinkaiEcoError(ErrorMessage.NOT_ENOUGHT_MONEY_FOR_SELL_ORDER.message);
 
-        PlayerEco sellerEco = NinkaiEco.playerEcoMap.get(sellOrder.getSellerUUID());
+        PlayerEco sellerEco = NinkaiEco.playerEcos.get(sellOrder.getSellerUUID());
         buyerEco.removeBankMoney(sellOrder.getPrice());
         sellerEco.addBankMoney(sellOrder.getMarginValue());
         scheduler.runTaskAsynchronously(plugin, bukkitTask -> {
