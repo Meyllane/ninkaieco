@@ -4,17 +4,19 @@ import com.github.meyllane.ninkaiEco.NinkaiEco;
 import com.github.meyllane.ninkaiEco.enums.RPRankSalary;
 import me.Seisan.plugin.Features.objectnum.RPRank;
 import me.Seisan.plugin.Main;
-import org.checkerframework.checker.units.qual.N;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 
 public class PlayerEco {
+    private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
+
     private int id;
     private final String playerUUID;
     private int bankMoney;
@@ -48,10 +50,6 @@ public class PlayerEco {
         return this.rpRankSalary.salary + this.institution.getRank().salary;
     }
 
-    public RPRank getRank() {
-        return rank;
-    }
-
     public int getBankMoney() {
         return bankMoney;
     }
@@ -70,10 +68,6 @@ public class PlayerEco {
 
     public PlayerInstitution getPlayerInstitution() {
         return institution;
-    }
-
-    public RPRankSalary getRpRankSalary() {
-        return rpRankSalary;
     }
 
     public void flush() {
@@ -207,5 +201,61 @@ public class PlayerEco {
                     "Error when updating PlayerEco : " + e.getMessage()
             );
         }
+    }
+
+    private static ArrayList<Plot> getPlotOwned(String playerUUID) {
+        ArrayList<Plot> plots = new ArrayList<>();
+        try {
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    """
+                            SELECT DISTINCT Plot.name FROM Plot
+                            INNER JOIN PlotOwner ON Plot.ID = PlotOwner.plotID
+                            WHERE PlotOwner.playerUUID = ?
+                            """
+            );
+            pst.setString(1, playerUUID);
+            ResultSet res = pst.executeQuery();
+            while (res.next()) {
+                plots.add(NinkaiEco.allPlots.get(res.getString("Plot.name")));
+            }
+            pst.close();
+            return plots;
+        } catch (SQLException e) {
+            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
+                    Level.SEVERE,
+                    "Error when fetching PlayerEco's plotOwned: " + e.getMessage()
+            );
+        }
+        return null;
+    }
+
+    public static HashMap<String, PlayerEco> getAllPlayerEco() {
+        HashMap<String, PlayerEco> playerEcoHashMap = new HashMap<>();
+        try {
+            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
+                    "SELECT * FROM Money"
+            );
+            ResultSet res = pst.executeQuery();
+            while (res.next()) {
+                RPRank rank = PlayerEco.getRank(res.getString("playerUUID"));
+                PlayerEco playerEco = new PlayerEco(
+                        res.getInt("ID"),
+                        res.getString("playerUUID"),
+                        res.getInt("bankMoney"),
+                        rank,
+                        PlayerInstitution.get(res.getString("playerUUID")),
+                        RPRankSalary.getByRPRank(rank)
+                );
+                playerEcoHashMap.put(playerEco.getPlayerUUID(), playerEco);
+            }
+            pst.close();
+            return playerEcoHashMap;
+        } catch (SQLException e) {
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Error while fetching all PlayerEcos: " + e.getMessage()
+            );
+        }
+        return playerEcoHashMap;
     }
 }

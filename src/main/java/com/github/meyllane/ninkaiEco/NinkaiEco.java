@@ -1,15 +1,8 @@
 package com.github.meyllane.ninkaiEco;
 
-import com.github.meyllane.ninkaiEco.command.ArtisanCommand;
-import com.github.meyllane.ninkaiEco.command.EcoCommand;
-import com.github.meyllane.ninkaiEco.command.InstitCommand;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerEco;
-import com.github.meyllane.ninkaiEco.dataclass.PlayerSalary;
-import com.github.meyllane.ninkaiEco.dataclass.SalaryTimer;
-import com.github.meyllane.ninkaiEco.dataclass.SellOrder;
-import com.github.meyllane.ninkaiEco.enums.SalaryStatus;
+import com.github.meyllane.ninkaiEco.command.*;
+import com.github.meyllane.ninkaiEco.dataclass.*;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
-import com.github.meyllane.ninkaiEco.listener.onPlayerEcoLoaded;
 import com.github.meyllane.ninkaiEco.listener.onPlayerJoin;
 import com.github.meyllane.ninkaiEco.listener.onPlayerQuit;
 import me.Seisan.plugin.Main;
@@ -22,28 +15,31 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 
 public final class NinkaiEco extends JavaPlugin implements Listener {
-    public static HashMap<String, PlayerEco> playerEcoMap = new HashMap<>();
     private BukkitAudiences adventure;
     private boolean salaryStart;
     private FileConfiguration config;
 
+    public static HashMap<String, Plot> allPlots = new HashMap<>();
+    public static HashMap<String, PlayerEco> playerEcos = new HashMap<>();
 
     @Override
     public void onEnable() {
         this.adventure = BukkitAudiences.create(this);
         this.getServer().getPluginManager().registerEvents(new onPlayerJoin(), this);
         this.getServer().getPluginManager().registerEvents(new onPlayerQuit(), this);
-        this.getServer().getPluginManager().registerEvents(new onPlayerEcoLoaded(), this);
 
         EcoCommand.register();
         InstitCommand.register();
         ArtisanCommand.register();
+        PlotCommand.register();
+        HPACommand.register();
+
+        playerEcos = PlayerEco.getAllPlayerEco();
+        allPlots = Plot.getAllPlots();
 
         //Save the config.yml file as in the resources if it does not exist already
         saveDefaultConfig();
@@ -55,7 +51,11 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
 
         if (!SalaryTimer.isLastSalaryDateSet()) SalaryTimer.insertLastSalaryDate();
 
-        if (this.salaryStart && SalaryTimer.isTimeForSalary()) this.handlePlayerSalaries();
+        if (this.salaryStart && SalaryTimer.isTimeForSalary()) {
+            this.handlePlayerSalaries();
+            ArrayList<HPA> hpas = HPA.getAllOnGoingHPA();
+            hpas.forEach(HPA::handlePayment);
+        }
     }
 
     @Override
@@ -104,15 +104,14 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
         List<PlayerEco> playerEcoList = PlayerEco.getAll();
         if (playerEcoList == null) return;
 
-        playerEcoList.forEach(playerEco -> this.getServer().getScheduler().runTaskAsynchronously(this, bukkitTask -> {
+        playerEcoList.forEach(playerEco -> {
             if (playerEco.getMonthlySalary() == 0) return;
-            PlayerSalary salary = new PlayerSalary(
-                    "Server",
-                    playerEco.getPlayerUUID(),
-                    playerEco.getMonthlySalary(),
-                    SalaryStatus.PENDING);
-            salary.flush();
-        }));
+            int salary = playerEco.getMonthlySalary();
+            playerEco.addBankMoney(salary);
+            playerEco.flush();
+            String message = String.format("<color:#bfbfbf>Votre salaire est arrivé ! %,d ryos ont été versés sur votre compte.", salary);
+            new Notification(salary, playerEco.getPlayerUUID(), message).flush();
+        });
 
         SalaryTimer.setLastSalaryDate(new Date());
     }

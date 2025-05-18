@@ -6,12 +6,12 @@ import java.util.List;
 
 public enum Institution {
 
-    NONE(1, "Aucune", "none", new ArrayList<InstitutionDivision>()),
-    DIPLOMATE(2, "Corps Diplomatique", "diplo", new ArrayList<InstitutionDivision>()),
-    ARTI(3, "Guilde des Artisans et Commerçants", "arti", new ArrayList<InstitutionDivision>()),
-    MED(4, "Corps Médical", "med", new ArrayList<InstitutionDivision>()),
-    ACADEMIE(5, "Académie", "aca", new ArrayList<InstitutionDivision>()),
-    ADMIN(6, "Administration", "admin", new ArrayList<InstitutionDivision>(List.of(InstitutionDivision.TOWN_PLANNING)));
+    NONE(1, "Aucune", "none", new ArrayList<>()),
+    DIPLOMATE(2, "Corps Diplomatique", "diplo", new ArrayList<>()),
+    ARTI(3, "Guilde des Artisans et Commerçants", "arti", new ArrayList<>()),
+    MED(4, "Corps Médical", "med", new ArrayList<>()),
+    ACADEMIE(5, "Académie", "aca", new ArrayList<>()),
+    ADMIN(6, "Administration", "admin", new ArrayList<>(List.of(InstitutionDivision.TOWN_PLANNING)));
 
     public final int id;
     public final String name;

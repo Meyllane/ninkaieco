@@ -54,12 +54,16 @@ permissions:
     children:
       ninkaieco.instit.self.see: true
       ninkaieco.instit.other.see: true
+      ninkaieco.instit.set.instit: true
+      ninkaieco.instit.set.division: true
   ninkaieco.instit.self.see:
     description: Allows to see in which institution the player is
   ninkaieco.instit.other.see:
     description: Allows to see in which institution the target is
-  ninkaieco.instit.set:
+  ninkaieco.instit.set.instit:
     description: Allows to set in which institution the target is
+  ninkaieco.instit.set.division:
+    description: Allows to set in which division the target is
 
   ninkaieco.artisan.sell:
     description: Allows to create a sell order
@@ -69,3 +73,28 @@ permissions:
     description: Allows to reject a sell order
   ninkaieco.artisan.cancel:
     description: Allows to cancal a sell order
+
+  ninkaieco.hpa.*:
+    description: Gives all .hpa permissions
+    children:
+        ninkaieco.hpa.set.hpa_contrib: true
+  ninkaieco.hpa.set.hpa_contrib:
+    description: Allows to set the part of the salary that goes to the HPA each month
+
+  ninkaieco.plot.see:
+    description: Allows to see information about plots
+  ninkaieco.plot.checkplots:
+    description: Allows to check the plots owned by the target
+  ninkaieco.plot.create:
+    description: Allows to create a plot
+  ninkaieco.plot.set.name:
+    description: Allows to change the name of a plot
+  ninkaieco.plot.set.price:
+    description: Allows to change the price of a plot
+  ninkaieco.plot.set.status:
+    description: Allows to change the status of a plot
+  ninkaieco.plot.set.owner.add:
+    description: Allows to add an owner to a plot
+  ninkaieco.plot.set.owner.remove:
+    description: Allow to remove an owner from a plot
+
