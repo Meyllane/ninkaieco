@@ -79,10 +79,9 @@ public class PlayerEco {
         this.institution.flush();
     }
 
-    public static PlayerEco get(String playerUUID) {
+    public static PlayerEco getOrCreate(String playerUUID) {
         RPRank rank = PlayerEco.getRank(playerUUID);
         try {
-
             PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
                     """
                             SELECT DISTINCT Money.*
@@ -133,32 +132,6 @@ public class PlayerEco {
             );
         }
         return RPRank.STUDENT;
-    }
-
-    public static List<PlayerEco> getAll() {
-        try {
-            ArrayList<PlayerEco> list = new ArrayList<>();
-            PreparedStatement pst = Main.dbManager.getConnection().prepareStatement(
-                    """
-                            SELECT DISTINCT Money.playerUUID
-                            FROM Money
-                            """
-            );
-            ResultSet res = pst.executeQuery();
-            while (res.next()) {
-                list.add(
-                        PlayerEco.get(res.getString("Money.playerUUID"))
-                );
-            }
-            pst.close();
-            return list;
-        } catch (SQLException e) {
-            NinkaiEco.getPlugin(NinkaiEco.class).getLogger().log(
-                    Level.SEVERE,
-                    "Error while fetching all the PlayerEco: " + e.getMessage()
-            );
-        }
-        return null;
     }
 
     private int create() {
@@ -257,5 +230,11 @@ public class PlayerEco {
             );
         }
         return playerEcoHashMap;
+    }
+
+    public boolean hasOngoingHPA() {
+        return NinkaiEco.allPlots.values().stream()
+                .filter(plot -> plot.getHpa() != null)
+                .anyMatch(plot -> plot.getOwnersUUID().contains(this.playerUUID));
     }
 }

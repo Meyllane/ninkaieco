@@ -59,15 +59,15 @@ public class ArtisanCommand {
                                 )
                 )
                 .thenNested(
-                        new LiteralArgument("accept"),
+                        new LiteralArgument("accept")
+                                .withPermission("ninkaieco.artisan.accept"),
                         new IntegerArgument("orderID")
-                        .withPermission("ninkaieco.artisan.accept")
                                 .executes(ArtisanCommand::acceptSellOrder)
                 )
                 .thenNested(
-                        new LiteralArgument("reject"),
+                        new LiteralArgument("reject")
+                                .withPermission("ninkaieco.artisan.reject"),
                         new IntegerArgument("orderID")
-                                .withPermission("ninkaieco.artisan.reject")
                                 .executes(ArtisanCommand::rejectSellOrder)
                 )
                 .then(

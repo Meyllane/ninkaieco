@@ -2,11 +2,13 @@ package com.github.meyllane.ninkaiEco;
 
 import com.github.meyllane.ninkaiEco.command.*;
 import com.github.meyllane.ninkaiEco.dataclass.*;
+import com.github.meyllane.ninkaiEco.enums.BankOperationType;
 import com.github.meyllane.ninkaiEco.enums.SellOrderStatus;
 import com.github.meyllane.ninkaiEco.listener.onPlayerJoin;
 import com.github.meyllane.ninkaiEco.listener.onPlayerQuit;
 import me.Seisan.plugin.Main;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,11 +28,15 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
     public static HashMap<String, Plot> allPlots = new HashMap<>();
     public static HashMap<String, PlayerEco> playerEcos = new HashMap<>();
 
+    public static ArrayList<OfflinePlayer> offlinePlayerArrayList;
+
     @Override
     public void onEnable() {
         this.adventure = BukkitAudiences.create(this);
         this.getServer().getPluginManager().registerEvents(new onPlayerJoin(), this);
         this.getServer().getPluginManager().registerEvents(new onPlayerQuit(), this);
+
+        offlinePlayerArrayList = new ArrayList<>(Arrays.asList(this.getServer().getOfflinePlayers()));
 
         EcoCommand.register();
         InstitCommand.register();
@@ -53,8 +59,9 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
 
         if (this.salaryStart && SalaryTimer.isTimeForSalary()) {
             this.handlePlayerSalaries();
-            ArrayList<HPA> hpas = HPA.getAllOnGoingHPA();
-            hpas.forEach(HPA::handlePayment);
+            allPlots.values().stream()
+                    .filter(plot -> plot.getHpa() != null)
+                    .forEach(plot -> plot.getHpa().handlePayment());
         }
     }
 
@@ -101,14 +108,17 @@ public final class NinkaiEco extends JavaPlugin implements Listener {
     }
 
     public void handlePlayerSalaries() {
-        List<PlayerEco> playerEcoList = PlayerEco.getAll();
-        if (playerEcoList == null) return;
-
-        playerEcoList.forEach(playerEco -> {
+        NinkaiEco.playerEcos.values().forEach(playerEco -> {
             if (playerEco.getMonthlySalary() == 0) return;
             int salary = playerEco.getMonthlySalary();
             playerEco.addBankMoney(salary);
             playerEco.flush();
+            new BankOperation(
+                    "Server",
+                    playerEco.getPlayerUUID(),
+                    salary,
+                    BankOperationType.SALARY
+            ).flush();
             String message = String.format("<color:#bfbfbf>Votre salaire est arrivé ! %,d ryos ont été versés sur votre compte.", salary);
             new Notification(salary, playerEco.getPlayerUUID(), message).flush();
         });

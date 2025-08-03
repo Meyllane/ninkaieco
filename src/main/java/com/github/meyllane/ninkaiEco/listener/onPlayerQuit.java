@@ -17,7 +17,7 @@ public class onPlayerQuit implements Listener {
 
         //Retrieve the player
         PlayerEco playerEco = NinkaiEco.playerEcos.get(playerUUID);
-
+        System.out.println(playerEco.getPlayerUUID());
         //Flush the player's data to the database
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, bukkitTask -> playerEco.flush());
     }

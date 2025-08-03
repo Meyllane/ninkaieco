@@ -74,7 +74,7 @@ public class SalaryTimer {
         if (lastSalaryDate == null) return false;
 
         long diff = new Date().getTime() - lastSalaryDate.getTime();
-        return TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) > 30;
+        return TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) >= 30;
     }
 
     public static void setLastSalaryDate(Date date) {

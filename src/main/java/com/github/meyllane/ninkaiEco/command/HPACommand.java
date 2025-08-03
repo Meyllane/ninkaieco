@@ -48,9 +48,9 @@ public class HPACommand {
                                 .thenNested(
                                         new LiteralArgument("set")
                                                 .thenNested(
-                                                        new LiteralArgument("hpa_contrib"),
+                                                        new LiteralArgument("hpa_contrib")
+                                                                .withPermission("ninkaieco.hpa.set.hpa_contrib"),
                                                         new FloatArgument("perc", 0.01f, 1f)
-                                                                .withPermission("ninkaieco.hpa.set.hpa_contrib")
                                                                 .executes(HPACommand::setHPAContrib)
                                                 )
                                 )

@@ -32,8 +32,8 @@ public class InstitCommand {
     private static final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
     private static final BukkitAudiences adventure = plugin.adventure();
     private static final MiniMessage mm = MiniMessage.miniMessage();
-    private static final HashMap<String, Argument<?>> suggestions = new HashMap<>();
     private static final BukkitScheduler scheduler = plugin.getServer().getScheduler();
+    private static final HashMap<String, ArgumentSuggestions<CommandSender>> suggestionsMap = new HashMap<>();
 
     /**
      * Registers the <code>CommandTree</code>
@@ -41,13 +41,13 @@ public class InstitCommand {
     public static void register() {
 
         //Provides the correct Institution shortnames as suggestions
-        suggestions.put("institShortName",
-                new StringArgument("institShortName").replaceSuggestions(ArgumentSuggestions.strings(info ->
-                    Arrays.stream(Institution.values()).map(instit -> instit.shortName).toArray(String[]::new))));
+        suggestionsMap.put("institShortName", ArgumentSuggestions.strings(info ->
+                        Arrays.stream(Institution.values()).map(instit -> instit.shortName).toArray(String[]::new)
+                ));
 
         //Provides the correct
-        suggestions.put("institRankShortName",
-                new StringArgument("institRankShortName").replaceSuggestions(ArgumentSuggestions.strings(info -> {
+        suggestionsMap.put("institRankShortName",
+                ArgumentSuggestions.strings(info -> {
                     String institShortName = (String) info.previousArgs().get("institShortName");
                     if (institShortName.equals(Institution.NONE.shortName)) return new String[]{InstitutionRank.NONE.shortName};
 
@@ -55,10 +55,10 @@ public class InstitCommand {
                             .map(rank -> rank.shortName)
                             .filter(rank -> !rank.equals(InstitutionRank.NONE.shortName))
                             .toArray(String[]::new);
-        })));
+                }));
 
-        suggestions.put("subDivisions",
-                new StringArgument("subDivision").replaceSuggestions(ArgumentSuggestions.strings(info -> {
+        suggestionsMap.put("subDivisions",
+                ArgumentSuggestions.strings(info -> {
                     List<String> res = new ArrayList<>();
                     res.add("none");
 
@@ -74,31 +74,29 @@ public class InstitCommand {
 
                     res.addAll(divisions);
                     return res.toArray(new String[0]);
-                })));
+                }));
 
-        suggestions.put("offlinePlayers",
-                new StringArgument("target").replaceSuggestions(ArgumentSuggestions.strings(
-                    Arrays.stream(plugin.getServer().getOfflinePlayers())
-                            .map(OfflinePlayer::getName)
-                            .toArray(String[]::new)
-                )));
+        suggestionsMap.put("offlinePlayers", ArgumentSuggestions.strings(info ->
+                Arrays.stream(plugin.getServer().getOfflinePlayers()).map(OfflinePlayer::getName).toArray(String[]::new)
+        ));
 
         new CommandTree("instit")
                 .withPermission("ninkaieco.instit.self.see")
                 .executes(InstitCommand::seeInstit)
-                .then(suggestions.get("offlinePlayers")
+                .then(
+                        new StringArgument("target").replaceSuggestions(suggestionsMap.get("offlinePlayers"))
                         .then(new LiteralArgument("set")
                                 .thenNested(
-                                        new LiteralArgument("instit"),
-                                        suggestions.get("institShortName"),
-                                        suggestions.get("institRankShortName")
-                                                .withPermission("ninkaieco.instit.set.instit")
+                                        new LiteralArgument("instit")
+                                                .withPermission("ninkaieco.instit.set.instit"),
+                                        new StringArgument("institShortName").replaceSuggestions(suggestionsMap.get("institShortName")),
+                                        new StringArgument("institRankShortName").replaceSuggestions(suggestionsMap.get("institRankShortName"))
                                                 .executes(InstitCommand::setPlayerInstitution)
                                 )
                                 .thenNested(
-                                        new LiteralArgument("division"),
-                                        suggestions.get("subDivisions")
-                                                .withPermission("ninkaieco.instit.set.division")
+                                        new LiteralArgument("division")
+                                                .withPermission("ninkaieco.instit.set.division"),
+                                        new StringArgument("subDivision").replaceSuggestions(suggestionsMap.get("subDivisions"))
                                                 .executes(InstitCommand::setPlayerDivision)
                                 )
                         )

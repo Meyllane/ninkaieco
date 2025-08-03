@@ -13,6 +13,7 @@ import dev.jorel.commandapi.CommandAPI;
 import me.Seisan.plugin.Features.objectnum.RPRank;
 import me.Seisan.plugin.Main;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,6 +26,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class onPlayerJoin implements Listener {
     private final NinkaiEco plugin = NinkaiEco.getPlugin(NinkaiEco.class);
@@ -34,7 +36,23 @@ public class onPlayerJoin implements Listener {
     public void onJoin(PlayerJoinEvent event) throws SQLException {
         Player player = event.getPlayer();
 
+        PlayerEco playerEco = NinkaiEco.playerEcos.get(player.getUniqueId().toString());
+
+        if (playerEco == null) {
+            RPRank rank = PlayerEco.getRank(player.getUniqueId().toString());
+            playerEco = new PlayerEco(player.getUniqueId().toString(), rank);
+            NinkaiEco.playerEcos.put(player.getUniqueId().toString(), playerEco);
+        }
+
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> this.handlePlayerNotifications(player));
+
+        ArrayList<String> offlinePlayersName = NinkaiEco.offlinePlayerArrayList.stream()
+                .map(OfflinePlayer::getName)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        if (!offlinePlayersName.contains(player.getName())) {
+            NinkaiEco.offlinePlayerArrayList.add((OfflinePlayer) player);
+        }
     }
 
     /**

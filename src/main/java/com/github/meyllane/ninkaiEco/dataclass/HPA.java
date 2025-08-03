@@ -91,6 +91,7 @@ public class HPA {
         this.flushHPAAttributs();
 
         ArrayList<HPAContractor> oldContractors = HPAContractor.getContractors(this.id);
+
         //Adding new Contractors
         this.contractors.forEach(contractor -> {
             if (!oldContractors.contains(contractor)) contractor.flushUpsert();
